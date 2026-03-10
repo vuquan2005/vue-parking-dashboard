@@ -28,7 +28,7 @@ const store = useParkingStore()
           >
             {{ event.type === 'IN' ? 'Xe vào' : 'Xe ra' }}
           </span>
-          <span class="text-xs text-gray-400">{{ event.timestamp }}</span>
+          <span class="text-xs text-gray-600">{{ event.timestamp }}</span>
         </div>
 
         <!-- Details -->
@@ -36,11 +36,11 @@ const store = useParkingStore()
           <p class="flex items-center">
             <span class="font-semibold text-gray-500">#</span>
             <span class="ml-1">{{ event.plateNumber }}</span>
-            <span class="ml-3 text-gray-400 flex items-center gap-1">
+            <span class="ml-15 text-gray-400 flex items-center gap-1">
               <Car class="w-3.5 h-3.5" />
               Vị trí
             </span>
-            <span class="ml-1 font-bold text-gray-700">{{ event.slotId }}</span>
+            <span class="ml-2 font-bold text-gray-700">{{ event.slotId }}</span>
           </p>
           <p>
             <span class="text-gray-400">⇆</span>

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type SlotStatus = 'EMPTY' | 'FULL' | 'PROCESSING'
+export type SlotStatus = 'NO_PALLET' | 'EMPTY' | 'OCCUPIED' | 'PROCESSING'
 export type EventType = 'IN' | 'OUT'
 export type EventStatus = 'Success' | 'Processing'
 
@@ -20,21 +20,28 @@ export interface ParkingEvent {
     timestamp: string
 }
 
+export type FilterType = SlotStatus | null
+
 export const useParkingStore = defineStore('parking', () => {
     const wsConnected = ref(true)
+    const selectedFilter = ref<FilterType>(null)
+
+    function toggleFilter(filter: FilterType) {
+        selectedFilter.value = selectedFilter.value === filter ? null : filter
+    }
 
     const slots = ref<ParkingSlot[]>([
-        { id: 'A1', status: 'FULL', plateNumber: 'E2001021' },
+        { id: 'A1', status: 'OCCUPIED', plateNumber: 'E2001021' },
         { id: 'A2', status: 'EMPTY' },
-        { id: 'A3', status: 'EMPTY' },
-        { id: 'A4', status: 'FULL', plateNumber: '51G-56789' },
+        { id: 'A3', status: 'OCCUPIED' },
+        { id: 'A4', status: 'OCCUPIED', plateNumber: '51G-56789' },
         { id: 'B1', status: 'PROCESSING', plateNumber: 'F9876543' },
-        { id: 'B2', status: 'FULL', plateNumber: '30E-12345' },
+        { id: 'B2', status: 'OCCUPIED', plateNumber: '30E-12345' },
         { id: 'B3', status: 'EMPTY' },
-        { id: 'B4', status: 'EMPTY' },
+        { id: 'B4', status: 'NO_PALLET' },
         { id: 'C1', status: 'EMPTY' },
-        { id: 'C2', status: 'FULL', plateNumber: 'A1B2C3D4' },
-        { id: 'C3', status: 'EMPTY' },
+        { id: 'C2', status: 'OCCUPIED', plateNumber: 'A1B2C3D4' },
+        { id: 'C3', status: 'NO_PALLET' },
         { id: 'C4', status: 'PROCESSING', plateNumber: '30K-99999' },
     ])
 
@@ -90,19 +97,23 @@ export const useParkingStore = defineStore('parking', () => {
     ])
 
     const totalSlots = computed(() => slots.value.length)
+    const noPalletCount = computed(() => slots.value.filter((s) => s.status === 'NO_PALLET').length)
     const emptyCount = computed(() => slots.value.filter((s) => s.status === 'EMPTY').length)
-    const fullCount = computed(() => slots.value.filter((s) => s.status === 'FULL').length)
+    const occupiedCount = computed(() => slots.value.filter((s) => s.status === 'OCCUPIED').length)
     const processingCount = computed(
         () => slots.value.filter((s) => s.status === 'PROCESSING').length,
     )
 
     return {
         wsConnected,
+        selectedFilter,
+        toggleFilter,
         slots,
         events,
         totalSlots,
+        noPalletCount,
         emptyCount,
-        fullCount,
+        occupiedCount,
         processingCount,
     }
 })

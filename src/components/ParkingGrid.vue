@@ -5,27 +5,53 @@ import { Car } from 'lucide-vue-next'
 const store = useParkingStore()
 
 function slotClasses(status: string) {
-  const base = 'flex flex-col items-center justify-center rounded-xl border-2 p-3 transition-all'
+  const base =
+    'relative flex flex-col items-center justify-center rounded-xl border-2 p-3 transition-all duration-300'
   switch (status) {
-    case 'FULL':
+    case 'OCCUPIED':
       return `${base} border-red-300 bg-red-50 text-red-600`
     case 'PROCESSING':
-      return `${base} border-red-300 bg-red-50 text-red-600`
+      return `${base} border-yellow-300 bg-yellow-50 text-yellow-600`
+    case 'NO_PALLET':
+      return `${base} border-dashed border-gray-300 bg-gray-100/60 text-gray-400`
     case 'EMPTY':
     default:
       return `${base} border-emerald-300 bg-emerald-50 text-emerald-600`
   }
 }
 
+function filterClasses(status: string) {
+  const filter = store.selectedFilter
+  if (!filter) return ''
+  if (status === filter) return 'scale-[1.005]'
+  return 'opacity-30 blur-[1.1px] scale-98'
+}
+
 function statusLabel(status: string) {
   switch (status) {
-    case 'FULL':
-      return 'FULL'
+    case 'OCCUPIED':
+      return 'CÓ XE'
     case 'PROCESSING':
-      return 'PROCESSING'
+      return 'ĐANG XỬ LÝ'
+    case 'NO_PALLET':
+      return 'KHÔNG PALLET'
     case 'EMPTY':
     default:
-      return 'EMPTY'
+      return 'TRỐNG'
+  }
+}
+
+function statusBadgeClass(status: string) {
+  switch (status) {
+    case 'OCCUPIED':
+      return 'bg-red-100 text-red-700 ring-red-500/20'
+    case 'PROCESSING':
+      return 'bg-yellow-100 text-yellow-700 ring-yellow-500/20'
+    case 'NO_PALLET':
+      return 'bg-gray-200 text-gray-500 ring-gray-400/20'
+    case 'EMPTY':
+    default:
+      return 'bg-emerald-100 text-emerald-700 ring-emerald-500/20'
   }
 }
 </script>
@@ -37,17 +63,23 @@ function statusLabel(status: string) {
       Sơ đồ bãi đỗ
     </h2>
     <div class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 min-h-0 flex-1">
-      <div v-for="slot in store.slots" :key="slot.id" :class="slotClasses(slot.status)">
+      <div
+        v-for="slot in store.slots"
+        :key="slot.id"
+        :class="[slotClasses(slot.status), filterClasses(slot.status)]"
+      >
+        <!-- ID label -->
         <span class="text-lg font-bold leading-none">{{ slot.id }}</span>
-        <div class="flex flex-col items-center justify-center w-full mt-1.5">
+
+        <div class="flex flex-col items-center justify-center w-full mt-1.5 h-6">
           <span
-            v-if="slot.plateNumber"
-            class="rounded bg-white/50 px-2 py-0.5 text-xs font-bold tracking-widest text-gray-800 shadow-sm ring-1 ring-gray-900/10"
+            class="rounded px-2 py-0.5 font-bold tracking-wider uppercase ring-1 flex items-center justify-center text-center max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
+            :class="[
+              statusBadgeClass(slot.status),
+              slot.plateNumber ? 'text-xs rounded' : 'text-[10px] rounded-full',
+            ]"
           >
-            {{ slot.plateNumber }}
-          </span>
-          <span v-else class="text-[11px] font-semibold tracking-wider uppercase">
-            {{ statusLabel(slot.status) }}
+            {{ slot.plateNumber || statusLabel(slot.status) }}
           </span>
         </div>
       </div>

@@ -15,7 +15,7 @@ const store = useParkingStore()
       class="mb-6 shrink-0 flex items-center justify-between rounded-2xl bg-white px-8 py-5 shadow-sm"
     >
       <div>
-        <h1 class="text-xl font-bold text-gray-800">Smart Parking Dashboard</h1>
+        <h1 class="text-xl font-bold text-gray-800">Parking Dashboard</h1>
         <p class="text-sm text-gray-400">Hệ thống giám sát bãi đỗ xe thông minh</p>
       </div>
       <div
