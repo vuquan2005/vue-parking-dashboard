@@ -1,0 +1,48 @@
+# Build outputs
+dist/
+dist-ssr/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Minified files
+*.min.js
+*.min.css
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Public assets/media
+public/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.mp4
+*.svg
+*.ico
+
+# Other generated files
+.nuxt/
+.output/
+.vercel/
