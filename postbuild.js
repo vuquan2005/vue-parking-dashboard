@@ -5,15 +5,15 @@ import zlib from 'zlib'
 const html = fs.readFileSync('dist/index.html', 'utf8')
 
 const result = await minify(html, {
-  collapseWhitespace: true,
-  removeComments: true,
-  removeRedundantAttributes: true,
-  removeScriptTypeAttributes: true,
-  removeStyleLinkTypeAttributes: true,
-  removeTagWhitespace: true,
-  useShortDoctype: true,
-  collapseBooleanAttributes: true,
-  removeAttributeQuotes: true,
+    collapseWhitespace: true,
+    removeComments: true,
+    removeRedundantAttributes: true,
+    removeScriptTypeAttributes: true,
+    removeStyleLinkTypeAttributes: true,
+    removeTagWhitespace: true,
+    useShortDoctype: true,
+    collapseBooleanAttributes: true,
+    removeAttributeQuotes: true,
 })
 
 fs.writeFileSync('dist/index.minify.html', result)
@@ -25,24 +25,24 @@ console.log(`✅ GZIP! Size: ${gzipped.length} bytes.`)
 
 const hexArray = []
 for (let i = 0; i < gzipped.length; i++) {
-  hexArray.push(`0x${gzipped[i].toString(16).padStart(2, '0')}`)
+    hexArray.push(`0x${gzipped[i].toString(16).padStart(2, '0')}`)
 }
 const chunks = []
 for (let i = 0; i < hexArray.length; i += 16) {
-  chunks.push(hexArray.slice(i, i + 16).join(', '))
+    chunks.push(hexArray.slice(i, i + 16).join(', '))
 }
 
-const headerContent = `#ifndef INDEX_HTML_GZ_H
-#define INDEX_HTML_GZ_H
+const headerContent = `#ifndef HTML_H
+#define HTML_H
 
 #include <pgmspace.h>
 
-const uint32_t index_html_gz_len = ${gzipped.length};
-const uint8_t index_html_gz[] PROGMEM = {
+const uint32_t html_len = ${gzipped.length};
+const uint8_t html[] PROGMEM = {
     ${chunks.join(',\n    ')}
 };
 
-#endif // INDEX_HTML_GZ_H
+#endif // HTML_H
 `
 
 fs.writeFileSync('dist/index.minify.h', headerContent)

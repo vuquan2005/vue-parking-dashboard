@@ -23,7 +23,7 @@ const store = useParkingStore()
           <span
             :class="[
               'rounded-md px-2.5 py-1 text-xs font-bold tracking-wide uppercase',
-              event.type === 'IN' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700',
+              event.type === 'IN' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700',
             ]"
           >
             {{ event.type === 'IN' ? 'Xe vào' : 'Xe ra' }}

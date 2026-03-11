@@ -14,9 +14,16 @@ const store = useParkingStore()
     <div
       class="mb-6 shrink-0 flex items-center justify-between rounded-2xl bg-white px-8 py-5 shadow-sm"
     >
-      <div>
-        <h1 class="text-xl font-bold text-gray-800">Parking Dashboard</h1>
-        <p class="text-sm text-gray-400">Hệ thống giám sát bãi đỗ xe thông minh</p>
+      <div class="flex items-center gap-4">
+        <img
+          src="@/assets/ETEK-logo.png"
+          alt="ETEK Parking Logo"
+          class="h-12 w-auto object-contain"
+        />
+        <div>
+          <h1 class="text-2xl font-black text-gray-900 tracking-tight leading-tight"></h1>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest"></p>
+        </div>
       </div>
       <div
         :class="[

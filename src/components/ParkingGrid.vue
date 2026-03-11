@@ -34,7 +34,7 @@ function statusLabel(status: string) {
     case 'PROCESSING':
       return 'ĐANG XỬ LÝ'
     case 'NO_PALLET':
-      return 'KHÔNG PALLET'
+      return '---'
     case 'EMPTY':
     default:
       return 'TRỐNG'
