@@ -61,10 +61,6 @@ export function useWebSocket() {
 
     const processWifiStatus = (parsed: WsMessage) => {
         const statusData = (parsed.data || parsed) as ReturnType<typeof useConfigStore>['espStatus']
-        if (wsClient.lastPingTime > 0) {
-            // statusData.latency = Math.round(performance.now() - wsClient.lastPingTime)
-            wsClient.lastPingTime = 0
-        }
         configStore.handleWiFiStatus(statusData)
     }
 
