@@ -29,9 +29,9 @@ export class WebSocketClient {
     private ws: WebSocket | null = null
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null
     private pingTimer: ReturnType<typeof setInterval> | null = null
-    private pingTimeoutTimer: ReturnType<typeof setTimeout> | null = null
     private reconnectAttempts: number = 0
     public lastPingTime = 0
+    public lastMessageTime = 0
 
     public options: WebSocketOptions
 
@@ -43,7 +43,8 @@ export class WebSocketClient {
         this.reconnectInterval = options.reconnectInterval || 3000
         this.maxReconnectInterval = options.maxReconnectInterval || 30000
         this.pingIntervalMs = options.pingInterval || 5000
-        this.pingTimeoutMs = options.pingTimeout || 3000
+        this.pingTimeoutMs = options.pingTimeout || 7500
+        this.lastMessageTime = performance.now()
     }
 
     public get isConnected(): boolean {
@@ -99,6 +100,8 @@ export class WebSocketClient {
     }
 
     private handleMessageEvent(event: MessageEvent) {
+        this.lastMessageTime = performance.now()
+
         const data = event.data
         if (this.options.onRawMessage) {
             this.options.onRawMessage(data)
@@ -109,7 +112,6 @@ export class WebSocketClient {
             log.i('Parsed JSON:', parsed)
 
             if (parsed.type === 'wifi_status' && this.lastPingTime > 0) {
-                this.stopPingTimeout()
                 const latency = Math.round(performance.now() - this.lastPingTime)
                 this.lastPingTime = 0
 
@@ -177,11 +179,22 @@ export class WebSocketClient {
 
     private startPingTimer() {
         this.stopPingTimer()
+        this.lastMessageTime = performance.now()
+
         this.pingTimer = setInterval(() => {
             if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                this.lastPingTime = performance.now()
+                const now = performance.now()
+
+                if (now - this.lastMessageTime > this.pingTimeoutMs) {
+                    log.w(
+                        `Connection silent for ${Math.round(now - this.lastMessageTime)}ms, closing...`,
+                    )
+                    this.ws.close(4000, 'Ping timeout')
+                    return
+                }
+
+                this.lastPingTime = now
                 this.send({ type: 'wifi_status' })
-                this.startPingTimeout()
             }
         }, this.pingIntervalMs)
     }
@@ -190,24 +203,6 @@ export class WebSocketClient {
         if (this.pingTimer) {
             clearInterval(this.pingTimer)
             this.pingTimer = null
-        }
-        this.stopPingTimeout()
-    }
-
-    private startPingTimeout() {
-        this.stopPingTimeout()
-        this.pingTimeoutTimer = setTimeout(() => {
-            log.w(`Ping timeout after ${this.pingTimeoutMs}ms, closing connection...`)
-            if (this.ws) {
-                this.ws.close(4000, 'Ping timeout')
-            }
-        }, this.pingTimeoutMs)
-    }
-
-    private stopPingTimeout() {
-        if (this.pingTimeoutTimer) {
-            clearTimeout(this.pingTimeoutTimer)
-            this.pingTimeoutTimer = null
         }
     }
 }
