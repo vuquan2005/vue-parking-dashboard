@@ -1,3 +1,7 @@
+import { createLogger } from '@/utils/logger'
+
+const log = createLogger('WebSocket')
+
 export interface WsMessage {
     type: string
     [key: string]: unknown
@@ -6,6 +10,7 @@ export interface WsMessage {
 export interface WebSocketOptions {
     url?: string
     reconnectInterval?: number
+    maxReconnectInterval?: number
     pingInterval?: number
     onConnected?: () => void
     onDisconnected?: (code: number, reason: string) => void
@@ -17,10 +22,12 @@ export interface WebSocketOptions {
 export class WebSocketClient {
     private url: string
     private reconnectInterval: number
+    private maxReconnectInterval: number
     private pingIntervalMs: number
     private ws: WebSocket | null = null
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null
     private pingTimer: ReturnType<typeof setInterval> | null = null
+    private reconnectAttempts: number = 0
     public lastPingTime = 0
 
     public options: WebSocketOptions
@@ -31,6 +38,7 @@ export class WebSocketClient {
         this.url =
             options.url || import.meta.env.VITE_WS_URL || `${protocol}//${window.location.host}`
         this.reconnectInterval = options.reconnectInterval || 3000
+        this.maxReconnectInterval = options.maxReconnectInterval || 30000
         this.pingIntervalMs = options.pingInterval || 5000
     }
 
@@ -41,7 +49,7 @@ export class WebSocketClient {
     public connect() {
         if (this.isSocketActive()) return
 
-        console.log(`[WebSocket] Connecting to ${this.url}...`)
+        log.i(`Connecting to ${this.url}...`)
         this.ws = new WebSocket(this.url)
 
         this.ws.onopen = this.handleOpen.bind(this)
@@ -53,13 +61,15 @@ export class WebSocketClient {
     public disconnect() {
         this.stopReconnectTimer()
         this.stopPingTimer()
+        this.reconnectAttempts = 0
 
         if (this.ws) {
+            this.ws.onclose = null
             this.ws.close()
             this.ws = null
         }
 
-        console.log('[WebSocket] 🛑 Manually disconnected')
+        log.i('Manually disconnected')
         if (this.options.onDisconnected) {
             this.options.onDisconnected(1000, 'Manually disconnected')
         }
@@ -67,16 +77,17 @@ export class WebSocketClient {
 
     public send(data: string | object) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            console.warn('[WebSocket] ⚠️ Cannot send, not connected')
+            log.w('Cannot send, not connected')
             return
         }
         const message = typeof data === 'object' ? JSON.stringify(data) : data
         this.ws.send(message)
-        console.log('[WebSocket] 📤 Sent:', message)
+        log.i('Sent:', message)
     }
 
     private handleOpen() {
-        console.log('[WebSocket] ✅ Connected')
+        log.i('Connected')
+        this.reconnectAttempts = 0
         this.startPingTimer()
         if (this.options.onConnected) {
             this.options.onConnected()
@@ -91,24 +102,24 @@ export class WebSocketClient {
 
         try {
             const parsed = JSON.parse(data) as WsMessage
-            console.log('[WebSocket] 📦 Parsed JSON:', parsed)
+            log.i('Parsed JSON:', parsed)
             if (this.options.onMessage) {
                 this.options.onMessage(parsed)
             }
         } catch {
-            console.log('[WebSocket] 📦 Received (Text):', data)
+            log.i('Received (Text):', data)
         }
     }
 
     private handleError(error: Event) {
-        console.error('[WebSocket] ❌ Error:', error)
+        log.e('Error:', error)
         if (this.options.onError) {
             this.options.onError(error)
         }
     }
 
     private handleClose(event: CloseEvent) {
-        console.log(`[WebSocket] 🔌 Disconnected (code: ${event.code}, reason: ${event.reason})`)
+        log.i(`Disconnected (code: ${event.code}, reason: ${event.reason})`)
         if (this.options.onDisconnected) {
             this.options.onDisconnected(event.code, event.reason)
         }
@@ -122,6 +133,29 @@ export class WebSocketClient {
             this.ws &&
             (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
         )
+    }
+
+    private scheduleReconnect() {
+        if (this.reconnectTimer) return
+
+        const delay = Math.min(
+            this.reconnectInterval * Math.pow(2, this.reconnectAttempts),
+            this.maxReconnectInterval,
+        )
+
+        log.i(`Reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts + 1})...`)
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null
+            this.reconnectAttempts++
+            this.connect()
+        }, delay)
+    }
+
+    private stopReconnectTimer() {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer)
+            this.reconnectTimer = null
+        }
     }
 
     private startPingTimer() {
@@ -138,22 +172,6 @@ export class WebSocketClient {
         if (this.pingTimer) {
             clearInterval(this.pingTimer)
             this.pingTimer = null
-        }
-    }
-
-    private scheduleReconnect() {
-        if (this.reconnectTimer) return
-        console.log(`[WebSocket] ⏳ Reconnecting in ${this.reconnectInterval / 1000}s...`)
-        this.reconnectTimer = setTimeout(() => {
-            this.reconnectTimer = null
-            this.connect()
-        }, this.reconnectInterval)
-    }
-
-    private stopReconnectTimer() {
-        if (this.reconnectTimer) {
-            clearTimeout(this.reconnectTimer)
-            this.reconnectTimer = null
         }
     }
 }

@@ -2,7 +2,6 @@ import { ref } from 'vue'
 import { useConfigStore } from '@/stores/config'
 import { wsClient, type WsMessage } from '@/services/websocket'
 
-// Shared state (Singleton) equivalent to previous implementation
 const isConnected = ref(false)
 const lastMessage = ref<string | null>(null)
 let isInitialized = false
