@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { useParkingStore } from '@/stores/parking'
+import { useRouter } from 'vue-router'
+import { useConfigStore } from '@/stores/config'
+import { useWebSocket } from '@/composables/useWebSocket'
 import ActivityLog from '@/components/ActivityLog.vue'
 import ParkingGrid from '@/components/ParkingGrid.vue'
 import StatCards from '@/components/StatCards.vue'
 import { Wifi, WifiOff } from 'lucide-vue-next'
 
-const store = useParkingStore()
+const router = useRouter()
+const configStore = useConfigStore()
+const { isConnected } = useWebSocket()
 </script>
 
 <template>
@@ -26,16 +30,22 @@ const store = useParkingStore()
         </div>
       </div>
       <div
+        @click="router.push('/config')"
         :class="[
-          'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold',
-          store.wsConnected
-            ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
-            : 'bg-red-50 text-red-600 ring-1 ring-red-200',
+          'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold cursor-pointer transition-colors',
+          isConnected && (configStore.espStatus.connected || configStore.espStatus.mode === 'AP')
+            ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 hover:bg-emerald-100'
+            : 'bg-red-50 text-red-600 ring-1 ring-red-200 hover:bg-red-100',
         ]"
       >
-        <Wifi v-if="store.wsConnected" class="w-4 h-4 animate-pulse" />
-        <WifiOff v-else class="w-4 h-4" />
-        {{ store.wsConnected ? 'Connected' : 'Disconnected' }}
+        <Wifi v-if="isConnected && (configStore.espStatus.connected || configStore.espStatus.mode === 'AP')" class="w-4 h-4 animate-pulse shrink-0" />
+        <WifiOff v-else class="w-4 h-4 shrink-0" />
+        <span>
+          {{ isConnected 
+             ? (configStore.espStatus.ssid || 'Connected') 
+             : 'Disconnected' 
+          }}
+        </span>
       </div>
     </div>
 

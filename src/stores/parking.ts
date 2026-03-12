@@ -23,7 +23,6 @@ export interface ParkingEvent {
 export type FilterType = SlotStatus | null
 
 export const useParkingStore = defineStore('parking', () => {
-    const wsConnected = ref(true)
     const selectedFilter = ref<FilterType>(null)
 
     function toggleFilter(filter: FilterType) {
@@ -115,7 +114,6 @@ export const useParkingStore = defineStore('parking', () => {
     )
 
     return {
-        wsConnected,
         selectedFilter,
         toggleFilter,
         slots,
