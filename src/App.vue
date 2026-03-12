@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
-import { useWebSocket } from './composables/useWebSocket'
+import { useWebSocket } from '@/composables/useWebSocket'
 
-const { connect } = useWebSocket()
+const { initWebSocket } = useWebSocket()
 
 onMounted(() => {
-  connect()
+  initWebSocket()
 })
 </script>
 

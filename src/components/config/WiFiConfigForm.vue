@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { useConfigStore, WiFiMode } from '@/stores/config'
 import {
-  Wifi, WifiOff, Shield, Eye, EyeOff, Send, Loader2, X,
-  Radio, Router, TriangleAlert,
+  Wifi,
+  WifiOff,
+  Shield,
+  Eye,
+  EyeOff,
+  Send,
+  Loader2,
+  X,
+  Radio,
+  Router,
+  TriangleAlert,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -28,9 +37,13 @@ function handleConnect() {
 <template>
   <div class="rounded-2xl border border-gray-200/80 bg-white shadow-sm overflow-hidden">
     <!-- Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-purple-50/50">
+    <div
+      class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-purple-50/50"
+    >
       <div class="flex items-center gap-3">
-        <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-violet-100 text-violet-600">
+        <div
+          class="flex items-center justify-center w-9 h-9 rounded-xl bg-violet-100 text-violet-600"
+        >
           <Router class="w-5 h-5" />
         </div>
         <div>
@@ -50,15 +63,16 @@ function handleConnect() {
     <!-- Connect form -->
     <div v-else class="p-6 space-y-5">
       <!-- Selected network info -->
-      <div class="flex items-center justify-between rounded-xl bg-sky-50/80 p-4 border border-sky-100">
+      <div
+        class="flex items-center justify-between rounded-xl bg-sky-50/80 p-4 border border-sky-100"
+      >
         <div class="flex items-center gap-3">
           <Wifi class="w-5 h-5 text-sky-600" />
           <div>
             <p class="text-sm font-bold text-gray-800">{{ config.selectedSSID }}</p>
             <p v-if="config.selectedNetwork" class="text-xs text-gray-400 mt-0.5">
               {{ config.encryptionLabel(config.selectedNetwork.encryption) }} ·
-              {{ config.selectedNetwork.rssi }} dBm ·
-              CH {{ config.selectedNetwork.channel }}
+              {{ config.selectedNetwork.rssi }} dBm · CH {{ config.selectedNetwork.channel }}
             </p>
           </div>
         </div>
@@ -72,7 +86,9 @@ function handleConnect() {
 
       <!-- WiFi Mode: AP / STA -->
       <div>
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Chế độ WiFi (ESP32)</label>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"
+          >Chế độ WiFi (ESP32)</label
+        >
         <div class="grid grid-cols-2 gap-3">
           <!-- STA Mode -->
           <button
@@ -84,14 +100,23 @@ function handleConnect() {
                 : 'border-gray-200 bg-gray-50/50 hover:border-gray-300',
             ]"
           >
-            <div :class="[
-              'flex items-center justify-center w-10 h-10 rounded-xl transition-all',
-              config.selectedMode === WiFiMode.STA ? 'bg-violet-500 text-white' : 'bg-gray-200 text-gray-500',
-            ]">
+            <div
+              :class="[
+                'flex items-center justify-center w-10 h-10 rounded-xl transition-all',
+                config.selectedMode === WiFiMode.STA
+                  ? 'bg-violet-500 text-white'
+                  : 'bg-gray-200 text-gray-500',
+              ]"
+            >
               <Wifi class="w-5 h-5" />
             </div>
             <div>
-              <p :class="['text-sm font-bold', config.selectedMode === WiFiMode.STA ? 'text-violet-700' : 'text-gray-600']">
+              <p
+                :class="[
+                  'text-sm font-bold',
+                  config.selectedMode === WiFiMode.STA ? 'text-violet-700' : 'text-gray-600',
+                ]"
+              >
                 Station (STA)
               </p>
               <p class="text-[11px] text-gray-400 mt-0.5">Kết nối tới Router</p>
@@ -108,14 +133,23 @@ function handleConnect() {
                 : 'border-gray-200 bg-gray-50/50 hover:border-gray-300',
             ]"
           >
-            <div :class="[
-              'flex items-center justify-center w-10 h-10 rounded-xl transition-all',
-              config.selectedMode === WiFiMode.AP ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-500',
-            ]">
+            <div
+              :class="[
+                'flex items-center justify-center w-10 h-10 rounded-xl transition-all',
+                config.selectedMode === WiFiMode.AP
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-gray-200 text-gray-500',
+              ]"
+            >
               <Radio class="w-5 h-5" />
             </div>
             <div>
-              <p :class="['text-sm font-bold', config.selectedMode === WiFiMode.AP ? 'text-amber-700' : 'text-gray-600']">
+              <p
+                :class="[
+                  'text-sm font-bold',
+                  config.selectedMode === WiFiMode.AP ? 'text-amber-700' : 'text-gray-600',
+                ]"
+              >
                 Access Point (AP)
               </p>
               <p class="text-[11px] text-gray-400 mt-0.5">ESP32 phát WiFi</p>
@@ -126,15 +160,16 @@ function handleConnect() {
 
       <!-- Password -->
       <div v-if="config.needsPassword">
-        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Mật khẩu WiFi</label>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5"
+          >Mật khẩu WiFi</label
+        >
         <div class="relative">
           <Shield class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             v-model="config.password"
             :type="showPassword ? 'text' : 'password'"
             placeholder="Nhập mật khẩu WiFi..."
-            class="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-10 pr-12 text-sm text-gray-700
-                   focus:border-violet-300 focus:bg-white focus:ring-2 focus:ring-violet-100 focus:outline-none transition-all duration-200"
+            class="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-10 pr-12 text-sm text-gray-700 focus:border-violet-300 focus:bg-white focus:ring-2 focus:ring-violet-100 focus:outline-none transition-all duration-200"
             @keyup.enter="handleConnect"
           />
           <button
@@ -148,7 +183,10 @@ function handleConnect() {
       </div>
 
       <!-- Open network notice -->
-      <div v-else class="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 border border-emerald-100">
+      <div
+        v-else
+        class="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 border border-emerald-100"
+      >
         <WifiOff class="w-4 h-4 text-emerald-600" />
         <span class="text-xs text-emerald-600 font-medium">Mạng mở - không cần mật khẩu</span>
       </div>
@@ -166,25 +204,27 @@ function handleConnect() {
       <button
         @click="handleConnect"
         :disabled="config.isConnecting || (config.needsPassword && !config.password)"
-        class="w-full flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200
-               bg-gradient-to-r from-violet-500 to-indigo-600 text-white hover:from-violet-600 hover:to-indigo-700
-               active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-violet-200/50"
+        class="w-full flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all duration-200 bg-gradient-to-r from-violet-500 to-indigo-600 text-white hover:from-violet-600 hover:to-indigo-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-violet-200/50"
       >
         <Loader2 v-if="config.isConnecting" class="w-4 h-4 animate-spin" />
         <Send v-else class="w-4 h-4" />
-        {{ config.isConnecting ? 'Đang kết nối...' : `Kết nối (${config.selectedMode === WiFiMode.AP ? 'AP' : 'STA'})` }}
+        {{
+          config.isConnecting
+            ? 'Đang kết nối...'
+            : `Kết nối (${config.selectedMode === WiFiMode.AP ? 'AP' : 'STA'})`
+        }}
       </button>
 
       <!-- Mode description -->
       <div class="rounded-xl bg-gray-50 p-3 border border-gray-100">
         <p class="text-[11px] text-gray-400 leading-relaxed">
           <template v-if="config.selectedMode === WiFiMode.STA">
-            <strong class="text-gray-500">STA Mode:</strong> ESP32 sẽ kết nối tới mạng WiFi đã chọn như một client.
-            Dashboard sẽ giao tiếp qua IP của ESP32 trên mạng LAN.
+            <strong class="text-gray-500">STA Mode:</strong> ESP32 sẽ kết nối tới mạng WiFi đã chọn
+            như một client. Dashboard sẽ giao tiếp qua IP của ESP32 trên mạng LAN.
           </template>
           <template v-else>
-            <strong class="text-gray-500">AP Mode:</strong> ESP32 sẽ phát WiFi riêng với SSID và mật khẩu này.
-            Các thiết bị kết nối trực tiếp vào ESP32 mà không cần router.
+            <strong class="text-gray-500">AP Mode:</strong> ESP32 sẽ phát WiFi riêng với SSID và mật
+            khẩu này. Các thiết bị kết nối trực tiếp vào ESP32 mà không cần router.
           </template>
         </p>
       </div>

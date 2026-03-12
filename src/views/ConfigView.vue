@@ -24,7 +24,7 @@ function requestConnect(payload: { ssid: string; password: string; mode: WiFiMod
     data: {
       ssid: payload.ssid,
       pass: payload.password,
-    }
+    },
   })
 }
 </script>
@@ -45,15 +45,16 @@ function requestConnect(payload: { ssid: string; password: string; mode: WiFiMod
           </div>
           <div>
             <h1 class="text-xl font-black text-gray-900 tracking-tight">Cấu hình WiFi ESP32</h1>
-            <p class="text-xs font-medium text-gray-400">Quét mạng · Kết nối · AP/STA Mode</p>
+            <p class="text-xs font-medium text-gray-400"></p>
           </div>
         </div>
       </div>
 
       <!-- WS connection status -->
       <div class="flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold ring-1" :class="config.espStatus.connected
-        ? 'bg-emerald-50 text-emerald-600 ring-emerald-200'
-        : 'bg-gray-50 text-gray-500 ring-gray-200'">
+          ? 'bg-emerald-50 text-emerald-600 ring-emerald-200'
+          : 'bg-gray-50 text-gray-500 ring-gray-200'
+        ">
         <Wifi class="w-3.5 h-3.5" />
         {{ config.espStatus.connected ? config.espStatus.ssid : 'Chưa kết nối WiFi' }}
       </div>

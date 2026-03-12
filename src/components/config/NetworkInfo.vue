@@ -98,7 +98,12 @@ function formatBytes(bytes?: number) {
                 : 'bg-violet-100 text-violet-600',
           ]"
         >
-          <Radio v-if="config.espStatus.mode === WiFiMode.AP || config.espStatus.mode === WiFiMode.AP_STA" class="w-5 h-5" />
+          <Radio
+            v-if="
+              config.espStatus.mode === WiFiMode.AP || config.espStatus.mode === WiFiMode.AP_STA
+            "
+            class="w-5 h-5"
+          />
           <Wifi v-else class="w-5 h-5" />
         </div>
         <div>
@@ -109,7 +114,7 @@ function formatBytes(bytes?: number) {
                 ? 'text-amber-700'
                 : config.espStatus.mode === WiFiMode.AP_STA
                   ? 'text-blue-700'
-                  : 'text-violet-700'
+                  : 'text-violet-700',
             ]"
           >
             {{ config.wifiModeLabel(config.espStatus.mode ?? 0) }} Mode
@@ -232,9 +237,7 @@ function formatBytes(bytes?: number) {
       </div>
 
       <!-- Hardware Info Grid -->
-      <div
-        class="grid grid-cols-2 gap-3 mt-4"
-      >
+      <div class="grid grid-cols-2 gap-3 mt-4">
         <!-- CPU Freq -->
         <div class="flex items-center gap-3 rounded-xl bg-gray-50/80 p-3.5 border border-gray-100">
           <div
