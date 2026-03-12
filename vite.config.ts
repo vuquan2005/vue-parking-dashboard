@@ -8,10 +8,11 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), vueDevTools(), tailwindcss(), viteSingleFile()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    base: process.env.NODE_ENV === 'production' ? '/parking-dashboard/' : '/',
+    plugins: [vue(), vueDevTools(), tailwindcss(), viteSingleFile()],
+    resolve: {
+        alias: {
+            '@': fileURLToPath(new URL('./src', import.meta.url)),
+        },
     },
-  },
 })
