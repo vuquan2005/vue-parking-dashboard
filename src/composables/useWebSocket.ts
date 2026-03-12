@@ -3,7 +3,6 @@ import { useConfigStore } from '@/stores/config'
 import { wsClient, type WsMessage } from '@/services/websocket'
 
 const isConnected = ref(false)
-const lastMessage = ref<string | null>(null)
 let isInitialized = false
 
 export function useWebSocket() {
@@ -19,10 +18,6 @@ export function useWebSocket() {
 
         wsClient.options.onDisconnected = () => {
             isConnected.value = false
-        }
-
-        wsClient.options.onRawMessage = (data: string) => {
-            lastMessage.value = data
         }
 
         wsClient.options.onMessage = (parsed: WsMessage) => {
@@ -66,7 +61,6 @@ export function useWebSocket() {
 
     return {
         isConnected,
-        lastMessage,
         connect: () => wsClient.connect(),
         disconnect: () => wsClient.disconnect(),
         send: (data: string | object) => wsClient.send(data),

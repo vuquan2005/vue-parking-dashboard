@@ -17,7 +17,6 @@ export interface WebSocketOptions {
     onDisconnected?: (code: number, reason: string) => void
     onMessage?: (message: WsMessage) => void
     onError?: (error: Event) => void
-    onRawMessage?: (data: string) => void
 }
 
 export class WebSocketClient {
@@ -103,9 +102,7 @@ export class WebSocketClient {
         this.lastMessageTime = performance.now()
 
         const data = event.data
-        if (this.options.onRawMessage) {
-            this.options.onRawMessage(data)
-        }
+        // log.i('Raw message:', data)
 
         try {
             const parsed = JSON.parse(data) as WsMessage
