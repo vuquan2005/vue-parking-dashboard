@@ -116,6 +116,8 @@ export const useParkingStore = defineStore('parking', () => {
     return {
         selectedFilter,
         toggleFilter,
+        addEvent,
+        updateAllSlot,
         slots,
         events,
         totalSlots,

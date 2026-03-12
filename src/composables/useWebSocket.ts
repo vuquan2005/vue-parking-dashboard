@@ -1,5 +1,5 @@
-import { ref, onUnmounted } from 'vue'
-import { useParkingStore } from '@/stores/parking'
+import { ref } from 'vue'
+// import { useParkingStore } from '@/stores/parking'
 import { useConfigStore } from '@/stores/config'
 
 const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -16,7 +16,7 @@ let lastPingTime = 0
 
 export function useWebSocket() {
     const configStore = useConfigStore()
-    const parkingStore = useParkingStore()
+    // const parkingStore = useParkingStore()
 
     function connect() {
         if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {

@@ -161,7 +161,7 @@ export const useConfigStore = defineStore('config', () => {
             0: 'NULL',
             1: 'STA',
             2: 'AP',
-            3: 'AP+STA',
+            3: 'STA+AP',
         }
         return labels[mode] || 'N/A'
     }
