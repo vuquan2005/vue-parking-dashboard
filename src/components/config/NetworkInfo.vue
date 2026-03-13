@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useConfigStore, WiFiMode } from '@/stores/config'
 import {
   Wifi,
@@ -18,6 +18,29 @@ import {
 } from 'lucide-vue-next'
 
 const config = useConfigStore()
+
+// Auto-tick logic cho Uptime mượt mà hơn
+const displayUptime = ref(config.espStatus.uptime || 0)
+let lastUptimeSync = Date.now()
+
+watch(() => config.espStatus.uptime, (newVal) => {
+  displayUptime.value = newVal || 0
+  lastUptimeSync = Date.now()
+})
+
+let uptimeTimer: number
+onMounted(() => {
+  // Cập nhật local uptime mỗi giây
+  uptimeTimer = window.setInterval(() => {
+    if (config.espStatus.connected && config.espStatus.uptime) {
+      displayUptime.value = config.espStatus.uptime + (Date.now() - lastUptimeSync)
+    }
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (uptimeTimer) clearInterval(uptimeTimer)
+})
 
 function rssiToPercent(rssi: number): number {
   return Math.max(0, Math.min(100, Math.round(((rssi + 90) / 60) * 100)))
@@ -78,7 +101,7 @@ const hardwareItems = computed(() => [
   { icon: HardDrive, label: 'Free RAM', value: formatBytes(config.espStatus.free_heap), color: 'bg-pink-100 text-pink-600' },
   { icon: HardDrive, label: 'Min Free Ever', value: formatBytes(config.espStatus.min_free_heap), color: 'bg-rose-100 text-rose-600' },
   { icon: Database, label: 'Largest Block', value: formatBytes(config.espStatus.max_free_block), color: 'bg-orange-100 text-orange-600' },
-  { icon: Clock, label: 'Uptime', value: formatUptime(config.espStatus.uptime), color: 'bg-blue-100 text-blue-600' },
+  { icon: Clock, label: 'Uptime', value: formatUptime(displayUptime.value), color: 'bg-blue-100 text-blue-600' },
   { icon: Activity, label: 'Ping', value: config.espStatus.latency ? config.espStatus.latency + ' ms' : '---', color: 'bg-teal-100 text-teal-600' },
 ])
 </script>
