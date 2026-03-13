@@ -39,6 +39,7 @@ export class WebSocketClient {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
         this.url =
             options.url || import.meta.env.VITE_WS_URL || `${protocol}//${window.location.host}`
+        this.url = 'etek.local'
         this.reconnectInterval = options.reconnectInterval || 3000
         this.maxReconnectInterval = options.maxReconnectInterval || 30000
         this.pingIntervalMs = options.pingInterval || 5000
