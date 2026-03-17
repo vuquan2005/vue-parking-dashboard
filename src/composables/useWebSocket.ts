@@ -28,7 +28,7 @@ function isParkingEvent(data: unknown): data is ParkingEvent {
         typeof d.plateNumber === 'string' &&
         typeof d.slotId === 'string' &&
         (d.status === 'Success' || d.status === 'Processing') &&
-        typeof d.timestamp === 'string'
+        typeof d.timestamp === 'number'
     )
 }
 

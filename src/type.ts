@@ -41,7 +41,7 @@ export interface ParkingEvent {
     plateNumber: string
     slotId: string
     status: EventStatus
-    timestamp: string
+    timestamp: number
 }
 
 /** WiFi mode on ESP32 */

@@ -19,8 +19,7 @@ function pad2(n: number) {
 }
 
 function nowTimestampVi() {
-    const d = new Date()
-    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
+    return Math.floor(Date.now() / 1000)
 }
 
 function randInt(min: number, max: number) {

@@ -3,6 +3,20 @@ import { useParkingStore } from '@/stores/parking'
 import { Clock, Car } from 'lucide-vue-next'
 
 const store = useParkingStore()
+
+function formatUnixToUtc7(unixTimestamp: number): string {
+  const timestampMs = unixTimestamp < 1_000_000_000_000 ? unixTimestamp * 1000 : unixTimestamp
+  const utc7Date = new Date(timestampMs + 7 * 60 * 60 * 1000)
+
+  const yyyy = utc7Date.getUTCFullYear()
+  const mm = String(utc7Date.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(utc7Date.getUTCDate()).padStart(2, '0')
+  const hh = String(utc7Date.getUTCHours()).padStart(2, '0')
+  const min = String(utc7Date.getUTCMinutes()).padStart(2, '0')
+  const ss = String(utc7Date.getUTCSeconds()).padStart(2, '0')
+
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`
+}
 </script>
 
 <template>
@@ -28,7 +42,7 @@ const store = useParkingStore()
           >
             {{ event.type === 'IN' ? 'Xe vào' : 'Xe ra' }}
           </span>
-          <span class="text-xs text-gray-600">{{ event.timestamp }}</span>
+          <span class="text-xs text-gray-600">{{ formatUnixToUtc7(event.timestamp) }}</span>
         </div>
 
         <!-- Details -->
