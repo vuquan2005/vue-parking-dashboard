@@ -18,7 +18,7 @@ function pad2(n: number) {
     return String(n).padStart(2, '0')
 }
 
-function nowTimestampVi() {
+function timeNow() {
     return Math.floor(Date.now() / 1000)
 }
 
@@ -34,18 +34,20 @@ function pick<T>(arr: T[]): T {
     return item
 }
 
-function randomPlateVN() {
-    const province = randInt(11, 99)
-    const letter = pick(['A', 'B', 'C', 'D'])
-    const series = randInt(0, 9)
-    const num1 = randInt(0, 999)
-    const num2 = randInt(0, 99)
-    return `${pad2(province)}${letter}${series}-${String(num1).padStart(3, '0')}.${pad2(num2)}`
+function randomHex() {
+    const bytes = Array.from({ length: 4 }, () =>
+        Math.floor(Math.random() * 256)
+            .toString(16)
+            .padStart(2, '0')
+            .toUpperCase(),
+    )
+
+    return bytes.join(':')
 }
 
 function buildInitialSlots(): ParkingSlot[] {
     const slots: ParkingSlot[] = []
-    const rows = ['A', 'B', 'C', 'D']
+    const rows = ['A', 'B', 'C']
     const cols = [1, 2, 3, 4]
     for (const r of rows) {
         for (const c of cols) {
@@ -81,13 +83,13 @@ function mutateSlots(slots: ParkingSlot[]): {
         plateNumber,
         slotId: cur.id,
         status,
-        timestamp: nowTimestampVi(),
+        timestamp: timeNow(),
     })
 
     if (cur.status === 'EMPTY') {
         if (nextAction < 0.6) {
             cur.status = 'PROCESSING'
-            cur.plateNumber = randomPlateVN()
+            cur.plateNumber = randomHex()
             return { slots: newSlots, event: createEvent('IN', cur.plateNumber, 'Processing') }
         }
         return { slots: newSlots }
@@ -112,7 +114,7 @@ function mutateSlots(slots: ParkingSlot[]): {
             cur.status = 'PROCESSING'
             return {
                 slots: newSlots,
-                event: createEvent('OUT', cur.plateNumber || randomPlateVN(), 'Processing'),
+                event: createEvent('OUT', cur.plateNumber || randomHex(), 'Processing'),
             }
         }
         return { slots: newSlots }
