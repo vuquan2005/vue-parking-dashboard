@@ -196,7 +196,7 @@ class MockWebSocketClient implements IWebSocketClient {
                     this.emit({ type: 'parking_event', data: mutated.event })
                 }
                 this.emit({ type: 'parking_update', data: this.slots })
-            }, 1000),
+            }, 1500),
         )
     }
 
