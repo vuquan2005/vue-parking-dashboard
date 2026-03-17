@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { SlotStatus, ParkingSlot, ParkingEvent } from '@/services/type'
+import type { SlotStatus, ParkingSlot, ParkingEvent } from '@/type'
 
 export type FilterType = SlotStatus | null
 

@@ -24,26 +24,6 @@ export interface WebSocketOptions {
     onError?: (error: Event) => void
 }
 
-/** WiFi mode on ESP32 */
-export enum WiFiMode {
-    NULL = 0,
-    STA = 1,
-    AP = 2,
-    AP_STA = 3,
-}
-
-/** Encryption types from ESP32 WiFi scan */
-export enum EncryptionType {
-    OPEN = 0,
-    WEP = 1,
-    WPA_PSK = 2,
-    WPA2_PSK = 3,
-    WPA_WPA2_PSK = 4,
-    WPA2_ENTERPRISE = 5,
-    WPA3_PSK = 6,
-    WPA2_WPA3_PSK = 7,
-}
-
 export type SlotStatus = 'NO_PALLET' | 'EMPTY' | 'OCCUPIED' | 'PROCESSING' | 'PENDING'
 
 export interface ParkingSlot {
@@ -62,6 +42,26 @@ export interface ParkingEvent {
     slotId: string
     status: EventStatus
     timestamp: string
+}
+
+/** WiFi mode on ESP32 */
+export enum WiFiMode {
+    NULL = 0,
+    STA = 1,
+    AP = 2,
+    AP_STA = 3,
+}
+
+/** Encryption types from ESP32 WiFi scan */
+export enum EncryptionType {
+    OPEN = 0,
+    WEP = 1,
+    WPA_PSK = 2,
+    WPA2_PSK = 3,
+    WPA_WPA2_PSK = 4,
+    WPA2_ENTERPRISE = 5,
+    WPA3_PSK = 6,
+    WPA2_WPA3_PSK = 7,
 }
 
 /** A scanned WiFi network from ESP32 beacon */
@@ -83,7 +83,7 @@ export interface ESPWiFiStatus {
     mac?: string
     rssi?: number
     channel?: number
-    apClients?: number // number of clients connected when in AP mode
+    apClients?: number
     free_heap?: number
     min_free_heap?: number
     max_free_block?: number

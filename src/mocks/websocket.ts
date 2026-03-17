@@ -1,5 +1,5 @@
 import { createLogger } from '@/utils/logger'
-import { WiFiMode } from '@/services/type'
+import { WiFiMode } from '@/type'
 import type {
     IWebSocketClient,
     WebSocketOptions,
@@ -10,7 +10,7 @@ import type {
     ESPWiFiStatus,
     EventType,
     EventStatus,
-} from '@/services/type'
+} from '@/type'
 
 const log = createLogger('WebSocket')
 

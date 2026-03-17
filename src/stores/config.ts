@@ -1,12 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import {
-    WiFiMode,
-    type BeaconNetwork,
-    type ESPWiFiStatus,
-    type EncryptionType,
-} from '@/services/type'
+import { WiFiMode, type BeaconNetwork, type ESPWiFiStatus, type EncryptionType } from '@/type'
 
 export { WiFiMode }
 

@@ -1,7 +1,9 @@
 import { ref } from 'vue'
+import { wsClient } from '@/services/websocket'
 import { useConfigStore } from '@/stores/config'
-import { useParkingStore, type ParkingEvent, type ParkingSlot } from '@/stores/parking'
-import { wsClient, type WsMessage } from '@/services/websocket'
+import { useParkingStore } from '@/stores/parking'
+
+import type { ParkingEvent, ParkingSlot, WsMessage } from '@/type'
 
 const isConnected = ref(false)
 let isInitialized = false

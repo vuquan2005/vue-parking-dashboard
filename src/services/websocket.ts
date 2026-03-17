@@ -1,16 +1,5 @@
 import { createLogger } from '@/utils/logger'
-import { WiFiMode } from './type'
-import type {
-    IWebSocketClient,
-    WebSocketOptions,
-    WsMessage,
-    ParkingSlot,
-    ParkingEvent,
-    BeaconNetwork,
-    ESPWiFiStatus,
-    EventType,
-    EventStatus,
-} from './type'
+import type { IWebSocketClient, WebSocketOptions, WsMessage } from '../type'
 
 import { mwsClient } from '@/mocks/websocket'
 
