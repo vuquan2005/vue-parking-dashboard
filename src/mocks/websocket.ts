@@ -14,10 +14,6 @@ import type {
 
 const log = createLogger('WebSocket')
 
-function pad2(n: number) {
-    return String(n).padStart(2, '0')
-}
-
 function timeNow() {
     return Math.floor(Date.now() / 1000)
 }

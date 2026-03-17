@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" -- && node postbuild.js",
-    "build:demo": "run-p type-check \"build-only -- --mode ghpages\" -- && node postbuild.js",
+    "build:demo": "vite build --mode ghpages",
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
