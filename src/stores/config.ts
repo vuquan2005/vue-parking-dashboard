@@ -1,52 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-// --- Types matching ESP32 beacon packets ---
+import {
+    WiFiMode,
+    type BeaconNetwork,
+    type ESPWiFiStatus,
+    type EncryptionType,
+} from '@/services/type'
 
-/** Encryption types from ESP32 WiFi scan */
-export type EncryptionType = number
-
-/** WiFi mode on ESP32 */
-export enum WiFiMode {
-    NULL = 0,
-    STA = 1,
-    AP = 2,
-    AP_STA = 3,
-}
-
-/** A scanned WiFi network from ESP32 beacon */
-export interface BeaconNetwork {
-    ssid: string
-    rssi: number // dBm, e.g. -30 (excellent) to -90 (weak)
-    encryption: EncryptionType
-    channel?: number
-    bssid?: string
-}
-
-/** Current ESP32 WiFi status sent via WS */
-export interface ESPWiFiStatus {
-    type?: string
-    mode?: WiFiMode
-    connected: boolean
-    ssid: string
-    ip: string
-    mac?: string
-    rssi?: number
-    channel?: number
-    apClients?: number // number of clients connected when in AP mode
-    free_heap?: number
-    min_free_heap?: number
-    max_free_block?: number
-    uptime?: number
-    cpu_freq?: number
-    latency?: number
-}
-
-/** WiFi connect command to send to ESP32 via WS */
-export interface WiFiConnectPayload {
-    ssid: string
-    pass: string
-}
+export { WiFiMode }
 
 export const useConfigStore = defineStore('config', () => {
     // --- Beacon networks from ESP32 scan ---

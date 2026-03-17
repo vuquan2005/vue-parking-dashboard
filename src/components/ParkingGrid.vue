@@ -12,6 +12,8 @@ function slotClasses(status: string) {
       return `${base} border-red-300 bg-red-50 text-red-600`
     case 'PROCESSING':
       return `${base} border-yellow-300 bg-yellow-50 text-yellow-600`
+    case 'PENDING':
+      return `${base} border-yellow-300 bg-yellow-50/60 text-yellow-600`
     case 'NO_PALLET':
       return `${base} border-dashed border-gray-300 bg-gray-100/60 text-gray-400`
     case 'EMPTY':

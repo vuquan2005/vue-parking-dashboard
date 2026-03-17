@@ -1,24 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type SlotStatus = 'NO_PALLET' | 'EMPTY' | 'OCCUPIED' | 'PROCESSING'
-export type EventType = 'IN' | 'OUT'
-export type EventStatus = 'Success' | 'Processing'
-
-export interface ParkingSlot {
-    id: string
-    status: SlotStatus
-    plateNumber?: string
-}
-
-export interface ParkingEvent {
-    id: number
-    type: EventType
-    plateNumber: string
-    slotId: string
-    status: EventStatus
-    timestamp: string
-}
+import type { SlotStatus, ParkingSlot, ParkingEvent } from '@/services/type'
 
 export type FilterType = SlotStatus | null
 
