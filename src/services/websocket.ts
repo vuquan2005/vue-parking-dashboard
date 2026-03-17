@@ -1,25 +1,22 @@
 import { createLogger } from '@/utils/logger'
+import { WiFiMode } from './type'
+import type {
+    IWebSocketClient,
+    WebSocketOptions,
+    WsMessage,
+    ParkingSlot,
+    ParkingEvent,
+    BeaconNetwork,
+    ESPWiFiStatus,
+    EventType,
+    EventStatus,
+} from './type'
+
+import { mwsClient } from '@/mocks/websocket'
 
 const log = createLogger('WebSocket')
 
-export interface WsMessage {
-    type: string
-    [key: string]: unknown
-}
-
-export interface WebSocketOptions {
-    url?: string
-    reconnectInterval?: number
-    maxReconnectInterval?: number
-    pingInterval?: number
-    pingTimeout?: number
-    onConnected?: () => void
-    onDisconnected?: (code: number, reason: string) => void
-    onMessage?: (message: WsMessage) => void
-    onError?: (error: Event) => void
-}
-
-export class WebSocketClient {
+export class WebSocketClient implements IWebSocketClient {
     private url: string
     private reconnectInterval: number
     private maxReconnectInterval: number
@@ -204,4 +201,6 @@ export class WebSocketClient {
     }
 }
 
-export const wsClient = new WebSocketClient()
+const isMockMode = String(import.meta.env.VITE_WS_MOCK || '').toLowerCase() === 'true'
+
+export const wsClient: IWebSocketClient = isMockMode ? mwsClient : new WebSocketClient()
