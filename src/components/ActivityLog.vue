@@ -142,15 +142,15 @@ function formatUnixToUtc7(unixTimestamp: number): string {
 
 @keyframes log-item-flash {
   0% {
-    background-color: rgba(255, 255, 153, 0.2);
-    border-color: rgba(215, 215, 0, 0.7);
-    box-shadow: 0 0 8px rgba(255, 255, 153, 0.4);
+    background-color: rgba(255, 255, 153, 0.05);
+    border-color: rgba(215, 215, 0, 0.3);
+    box-shadow: 0 0 4px rgba(255, 255, 153, 0.4);
   }
 
   30% {
-    background-color: rgba(255, 255, 102, 0.2);
-    border-color: rgba(216, 216, 0, 0.7);
-    box-shadow: 0 0 12px rgba(255, 255, 102, 0.4);
+    background-color: rgba(255, 255, 102, 0.05);
+    border-color: rgba(216, 216, 0, 0.3);
+    box-shadow: 0 0 6px rgba(255, 255, 102, 0.4);
   }
 
   100% {

@@ -11,9 +11,9 @@ function slotClasses(status: string) {
     case 'OCCUPIED':
       return `${base} border-red-300 bg-red-50 text-red-600`
     case 'PROCESSING':
-      return `${base} border-yellow-300 bg-yellow-50 text-yellow-600`
+      return `${base} border-yellow-300 bg-yellow-50 text-yellow-600 processing-opacity`
     case 'PENDING':
-      return `${base} border-yellow-300 bg-yellow-50/60 text-yellow-600`
+      return `${base} border-yellow-300 bg-yellow-50/70 text-yellow-600`
     case 'NO_PALLET':
       return `${base} border-dashed border-gray-300 bg-gray-100/60 text-gray-400`
     case 'EMPTY':
@@ -88,3 +88,19 @@ function statusBadgeClass(status: string) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.processing-opacity {
+  animation: processing-opacity 1.4s ease-in-out infinite;
+}
+
+@keyframes processing-opacity {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+</style>
