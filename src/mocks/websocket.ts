@@ -60,10 +60,10 @@ function mutateSlots(slots: ParkingSlot[]): {
     slots: ParkingSlot[]
     event?: ParkingEvent
 } {
-    const updatable = slots.filter((s) => s.status !== 'NO_PALLET')
-    if (updatable.length === 0) return { slots }
+    if (slots.length === 0) return { slots }
 
-    const slot = pick(updatable)
+    const processingSlot = slots.find((s) => s.status === 'PROCESSING')
+    const slot = processingSlot ?? pick(slots)
     const nextAction = Math.random()
 
     const newSlots = slots.map((s) => ({ ...s }))
@@ -71,6 +71,31 @@ function mutateSlots(slots: ParkingSlot[]): {
     if (idx < 0) return { slots: newSlots }
     const cur = newSlots[idx]
     if (!cur) return { slots: newSlots }
+    const hasProcessing = newSlots.some((s) => s.status === 'PROCESSING')
+
+    if (cur.status === 'NO_PALLET') {
+        const row = cur.id.slice(0, 1)
+        const col = Number(cur.id.slice(1))
+        if (Number.isNaN(col)) return { slots: newSlots }
+
+        const neighborIds = [`${row}${col - 1}`, `${row}${col + 1}`]
+        const neighbors = neighborIds
+            .map((id) => newSlots.find((s) => s.id === id))
+            .filter((s): s is ParkingSlot => s !== undefined)
+
+        if (neighbors.length === 0) return { slots: newSlots }
+
+        const target = pick(neighbors)
+        const curStatus = cur.status
+        const curPlate = cur.plateNumber
+
+        cur.status = target.status
+        cur.plateNumber = target.plateNumber
+        target.status = curStatus
+        target.plateNumber = curPlate
+
+        return { slots: newSlots }
+    }
 
     const createEvent = (
         type: EventType,
@@ -86,7 +111,7 @@ function mutateSlots(slots: ParkingSlot[]): {
     })
 
     if (cur.status === 'EMPTY') {
-        if (nextAction < 0.6) {
+        if (!hasProcessing && nextAction < 0.6) {
             cur.status = 'PROCESSING'
             cur.plateNumber = randomHex()
             return { slots: newSlots, event: createEvent('IN', cur.plateNumber, 'Processing') }
@@ -109,7 +134,7 @@ function mutateSlots(slots: ParkingSlot[]): {
     }
 
     if (cur.status === 'OCCUPIED') {
-        if (nextAction < 0.6) {
+        if (!hasProcessing && nextAction < 0.6) {
             cur.status = 'PROCESSING'
             return {
                 slots: newSlots,
