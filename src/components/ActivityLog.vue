@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useParkingStore } from '@/stores/parking'
 import { Clock, Car } from 'lucide-vue-next'
+import { computed } from 'vue'
 
 const store = useParkingStore()
+const eventsNewestFirst = computed(() => [...store.events].reverse())
 
 function formatUnixToUtc7(unixTimestamp: number): string {
   const timestampMs = unixTimestamp < 1_000_000_000_000 ? unixTimestamp * 1000 : unixTimestamp
@@ -28,7 +30,7 @@ function formatUnixToUtc7(unixTimestamp: number): string {
 
     <div class="flex flex-col gap-3 overflow-y-auto pr-2 min-h-0 flex-1">
       <div
-        v-for="event in store.events"
+        v-for="event in eventsNewestFirst"
         :key="event.id"
         class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-shadow hover:shadow-sm"
       >
