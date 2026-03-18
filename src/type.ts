@@ -41,6 +41,7 @@ export interface ParkingEvent {
     plateNumber: string
     slotId: string
     status: EventStatus
+    process?: number
     timestamp: number
 }
 

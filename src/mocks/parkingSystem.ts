@@ -12,6 +12,7 @@ type TaskExecutionCallback = (result: TaskExecutionResult) => void
 
 export class ParkingSystem {
     private static readonly EMPTY_SLOT_ID = 0
+    private static palletMetadataVersion = 0
 
     private palletIdGrid: number[][] = []
     private palletMetadata: Map<number, string> = new Map()
@@ -66,6 +67,18 @@ export class ParkingSystem {
      */
     get totalRows(): number {
         return this._totalRows
+    }
+
+    /**
+     * Gets current global version of `palletMetadata`.
+     *
+     * Version increases only when a new high-level parking queue
+     * is successfully generated.
+     *
+     * @returns Current pallet metadata version.
+     */
+    get palletMetadataVersion(): number {
+        return ParkingSystem.palletMetadataVersion
     }
 
     /**
@@ -282,6 +295,7 @@ export class ParkingSystem {
         }
 
         this.taskQueue.push({ type: 'SET_SLOT_DATA', palletId, plateNumber })
+        ParkingSystem.palletMetadataVersion++
         return true
     }
 

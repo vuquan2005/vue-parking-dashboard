@@ -13,7 +13,13 @@ export const useParkingStore = defineStore('parking', () => {
     }
 
     function addEvent(event: ParkingEvent) {
-        events.value.push(event)
+        const existingIndex = events.value.findIndex((e) => e.id === event.id)
+        if (existingIndex >= 0) {
+            events.value.splice(existingIndex, 1, event)
+        } else {
+            events.value.push(event)
+        }
+
         localStorage.setItem('events', JSON.stringify(events.value))
     }
 
