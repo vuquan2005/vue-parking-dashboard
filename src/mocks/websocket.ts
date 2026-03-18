@@ -22,8 +22,11 @@ function randInt(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function pick<T>(arr: T[]): T {
-    const item = arr[Math.floor(Math.random() * arr.length)]
+function pick<T>(arr: T[], index: number): T {
+    if (index < 0 || index >= arr.length) {
+        throw new Error(`pick() index out of bounds: ${index} (array length: ${arr.length})`)
+    }
+    const item = arr[index]
     if (item === undefined) {
         throw new Error('pick() called with empty array')
     }
@@ -45,7 +48,11 @@ function buildInitialSlots(): ParkingSlot[] {
     const slots: ParkingSlot[] = []
     const rows = ['A', 'B', 'C']
     const cols = [1, 2, 3, 4]
-    const noPalletIds = new Set<string>([`B${randInt(1, 4)}`, `C${randInt(1, 4)}`])
+    const noPalletIds = new Set<string>([
+        `A${randInt(1, 4)}`,
+        `B${randInt(1, 4)}`,
+        `C${randInt(1, 4)}`,
+    ])
     for (const r of rows) {
         for (const c of cols) {
             const id = `${r}${c}`
@@ -62,85 +69,221 @@ function mutateSlots(slots: ParkingSlot[]): {
 } {
     if (slots.length === 0) return { slots }
 
-    const processingSlot = slots.find((s) => s.status === 'PROCESSING')
-    const slot = processingSlot ?? pick(slots)
-    const nextAction = Math.random()
-
     const newSlots = slots.map((s) => ({ ...s }))
-    const idx = newSlots.findIndex((s) => s.id === slot.id)
-    if (idx < 0) return { slots: newSlots }
-    const cur = newSlots[idx]
-    if (!cur) return { slots: newSlots }
-    const hasProcessing = newSlots.some((s) => s.status === 'PROCESSING')
 
-    if (cur.status === 'NO_PALLET') {
-        const row = cur.id.slice(0, 1)
-        const col = Number(cur.id.slice(1))
-        if (Number.isNaN(col)) return { slots: newSlots }
+    const rowOf = (id: string) => id[0]
+    const colOf = (id: string) => Number(id.slice(1))
+    const slotAt = (row: string, col: number) =>
+        newSlots.find((s) => s.id === `${row}${col}`)
 
-        const neighborIds = [`${row}${col - 1}`, `${row}${col + 1}`]
-        const neighbors = neighborIds
-            .map((id) => newSlots.find((s) => s.id === id))
-            .filter((s): s is ParkingSlot => s !== undefined)
-
-        if (neighbors.length === 0) return { slots: newSlots }
-
-        const target = pick(neighbors)
-        const curStatus = cur.status
-        const curPlate = cur.plateNumber
-
-        cur.status = target.status
-        cur.plateNumber = target.plateNumber
-        target.status = curStatus
-        target.plateNumber = curPlate
-
-        return { slots: newSlots }
+    function swapSlots(a: ParkingSlot, b: ParkingSlot) {
+        const tmpStatus = a.status
+        const tmpPlate = a.plateNumber
+        a.status = b.status
+        a.plateNumber = b.plateNumber
+        b.status = tmpStatus
+        b.plateNumber = tmpPlate
     }
 
-    const createEvent = (
+    function makeEvent(
+        forSlot: ParkingSlot,
         type: EventType,
         plateNumber: string,
         status: EventStatus,
-    ): ParkingEvent => ({
-        id: Date.now(),
-        type,
-        plateNumber,
-        slotId: cur.id,
-        status,
-        timestamp: timeNow(),
-    })
+    ): ParkingEvent {
+        return {
+            id: Date.now(),
+            type,
+            plateNumber,
+            slotId: forSlot.id,
+            status,
+            timestamp: timeNow(),
+        }
+    }
 
-    if (cur.status === 'EMPTY') {
-        if (!hasProcessing && nextAction < 0.6) {
+    // ── Priority 1: Advance any PROCESSING slot ───────────────────────────
+    const processingSlots = newSlots.filter((s) => s.status === 'PROCESSING')
+    if (processingSlots.length > 0) {
+        const cur = pick(processingSlots, 0)
+        if (cur.plateNumber) {
+            if (Math.random() < 0.5) {
+                cur.status = 'OCCUPIED'
+                return {
+                    slots: newSlots,
+                    event: makeEvent(cur, 'IN', cur.plateNumber, 'Success'),
+                }
+            }
+            const plate = cur.plateNumber
+            cur.status = 'EMPTY'
+            cur.plateNumber = undefined
+            return { slots: newSlots, event: makeEvent(cur, 'OUT', plate, 'Success') }
+        }
+        cur.status = 'EMPTY'
+        return { slots: newSlots }
+    }
+
+    // ── Priority 2: Advance PENDING slots (middle and top rows) ──────────
+    const pendingSlots = newSlots.filter((s) => s.status === 'PENDING')
+    if (pendingSlots.length > 0) {
+        const cur = pick(pendingSlots, 0)
+        const row = rowOf(cur.id)
+        const col = colOf(cur.id)
+
+        if (row === 'B') {
+            // Middle row: needs the A-slot in the same column to be NO_PALLET
+            const aBelow = slotAt('A', col)
+
+            if (aBelow?.status === 'NO_PALLET') {
+                // Space below is clear — begin entry
+                cur.status = 'PROCESSING'
+                cur.plateNumber = randomHex()
+                return {
+                    slots: newSlots,
+                    event: makeEvent(cur, 'IN', cur.plateNumber, 'Processing'),
+                }
+            }
+
+            // A-slot below is blocked — if occupied, trigger its evacuation first
+            if (aBelow?.status === 'OCCUPIED') {
+                const plate = aBelow.plateNumber || randomHex()
+                aBelow.status = 'PROCESSING'
+                return {
+                    slots: newSlots,
+                    event: makeEvent(aBelow, 'OUT', plate, 'Processing'),
+                }
+            }
+
+            // Slide PENDING horizontally toward the column that has A-row NO_PALLET
+            const aNoPallet = newSlots.find(
+                (s) => rowOf(s.id) === 'A' && s.status === 'NO_PALLET',
+            )
+            if (aNoPallet) {
+                const npCol = colOf(aNoPallet.id)
+                const dir = npCol > col ? 1 : -1
+                const neighbor = slotAt('B', col + dir)
+                if (neighbor && neighbor.status !== 'PROCESSING') {
+                    swapSlots(cur, neighbor)
+                }
+            } else {
+                // No A-row NO_PALLET exists — shift right to avoid permanent deadlock
+                const neighbors = [slotAt('B', col - 1), slotAt('B', col + 1)].filter(
+                    (s): s is ParkingSlot => s !== undefined && s.status !== 'PROCESSING',
+                )
+                if (neighbors.length > 0) {
+                    // Prefer moving right (col + 1) if available, otherwise left
+                    const rightNeighbor = slotAt('B', col + 1)
+                    const fallback =
+                        rightNeighbor && rightNeighbor.status !== 'PROCESSING'
+                            ? rightNeighbor
+                            : pick(neighbors, 0)
+                    swapSlots(cur, fallback)
+                }
+            }
+            return { slots: newSlots }
+        }
+
+        if (row === 'C') {
+            // Top row: needs BOTH the B-slot and the A-slot in the same column to be NO_PALLET
+            const bBelow = slotAt('B', col)
+            const aBelow = slotAt('A', col)
+            const bothClear =
+                bBelow?.status === 'NO_PALLET' && aBelow?.status === 'NO_PALLET'
+
+            if (bothClear) {
+                // Both levels below are clear — begin entry
+                cur.status = 'PROCESSING'
+                cur.plateNumber = randomHex()
+                return {
+                    slots: newSlots,
+                    event: makeEvent(cur, 'IN', cur.plateNumber, 'Processing'),
+                }
+            }
+
+            // Find a column where both B-row and A-row slots are NO_PALLET
+            let targetCol: number | null = null
+            for (let c = 1; c <= 4; c++) {
+                if (
+                    slotAt('B', c)?.status === 'NO_PALLET' &&
+                    slotAt('A', c)?.status === 'NO_PALLET'
+                ) {
+                    targetCol = c
+                    break
+                }
+            }
+
+            if (targetCol !== null && targetCol !== col) {
+                // Slide PENDING toward the aligned column
+                const dir = targetCol > col ? 1 : -1
+                const neighbor = slotAt('C', col + dir)
+                if (neighbor && neighbor.status !== 'PROCESSING') {
+                    swapSlots(cur, neighbor)
+                }
+            } else {
+                // No aligned column yet — trigger evacuation of the nearest blocker
+                if (bBelow?.status === 'OCCUPIED') {
+                    const plate = bBelow.plateNumber || randomHex()
+                    bBelow.status = 'PROCESSING'
+                    return {
+                        slots: newSlots,
+                        event: makeEvent(bBelow, 'OUT', plate, 'Processing'),
+                    }
+                }
+                if (aBelow?.status === 'OCCUPIED') {
+                    const plate = aBelow.plateNumber || randomHex()
+                    aBelow.status = 'PROCESSING'
+                    return {
+                        slots: newSlots,
+                        event: makeEvent(aBelow, 'OUT', plate, 'Processing'),
+                    }
+                }
+                // Swap with adjacent C slot to try another column (prefer col + 1)
+                const neighbors = [slotAt('C', col - 1), slotAt('C', col + 1)].filter(
+                    (s): s is ParkingSlot => s !== undefined && s.status !== 'PROCESSING',
+                )
+                if (neighbors.length > 0) {
+                    const rightNeighbor = slotAt('C', col + 1)
+                    const fallback =
+                        rightNeighbor && rightNeighbor.status !== 'PROCESSING'
+                            ? rightNeighbor
+                            : pick(neighbors, 0)
+                    swapSlots(cur, fallback)
+                }
+            }
+            return { slots: newSlots }
+        }
+    }
+
+    // ── Priority 3: Randomly start a car exit (OCCUPIED → PROCESSING) ────
+    const occupiedSlots = newSlots.filter((s) => s.status === 'OCCUPIED')
+    if (occupiedSlots.length > 0 && Math.random() < 0.4) {
+        const idx = Math.floor(Math.random() * occupiedSlots.length)
+        const cur = pick(occupiedSlots, idx)
+        cur.status = 'PROCESSING'
+        return {
+            slots: newSlots,
+            event: makeEvent(cur, 'OUT', cur.plateNumber || randomHex(), 'Processing'),
+        }
+    }
+
+    // ── Priority 4: Start a new parking attempt for an EMPTY slot ────────
+    const emptySlots = newSlots.filter((s) => s.status === 'EMPTY')
+    if (emptySlots.length > 0) {
+        const idx = Math.floor(Math.random() * emptySlots.length)
+        const cur = pick(emptySlots, idx)
+        const row = rowOf(cur.id)
+
+        if (row === 'A') {
+            // Bottom row: cars enter directly without waiting
             cur.status = 'PROCESSING'
             cur.plateNumber = randomHex()
-            return { slots: newSlots, event: createEvent('IN', cur.plateNumber, 'Processing') }
-        }
-        return { slots: newSlots }
-    }
-
-    if (cur.status === 'PROCESSING') {
-        if (cur.plateNumber && nextAction < 0.5) {
-            cur.status = 'OCCUPIED'
-            return { slots: newSlots, event: createEvent('IN', cur.plateNumber, 'Success') }
-        }
-        if (cur.plateNumber && nextAction >= 0.5) {
-            cur.status = 'EMPTY'
-            const plate = cur.plateNumber
-            cur.plateNumber = undefined
-            return { slots: newSlots, event: createEvent('OUT', plate, 'Success') }
-        }
-        return { slots: newSlots }
-    }
-
-    if (cur.status === 'OCCUPIED') {
-        if (!hasProcessing && nextAction < 0.6) {
-            cur.status = 'PROCESSING'
             return {
                 slots: newSlots,
-                event: createEvent('OUT', cur.plateNumber || randomHex(), 'Processing'),
+                event: makeEvent(cur, 'IN', cur.plateNumber, 'Processing'),
             }
         }
+
+        // Middle (B) or top (C) row: must wait for the shaft below to clear
+        cur.status = 'PENDING'
         return { slots: newSlots }
     }
 
