@@ -2,7 +2,15 @@ type ParkingTask =
     | { type: 'MOVE_PALLET'; row: number; fromCol: number; toCol: number }
     | { type: 'SET_SLOT_DATA'; palletId: number; plateNumber: string }
 
-class ParkingSystem {
+type TaskExecutionResult = {
+    task: ParkingTask
+    success: boolean
+    remainingTasks: number
+}
+
+type TaskExecutionCallback = (result: TaskExecutionResult) => void
+
+export class ParkingSystem {
     private static readonly EMPTY_SLOT_ID = 0
 
     private palletIdGrid: number[][] = []
@@ -280,29 +288,41 @@ class ParkingSystem {
     /**
      * Executes the next task in queue.
      *
+     * @param onTaskExecuted Optional callback invoked after the task is executed.
      * @returns `true` when task execution succeeds; otherwise `false`.
      */
-    executeNextTask(): boolean {
+    executeNextTask(onTaskExecuted?: TaskExecutionCallback): boolean {
         const task = this.taskQueue.shift()
         if (!task) {
             return false
         }
 
+        let success = false
+
         if (task.type === 'MOVE_PALLET') {
-            return this.movePallet(task.row, task.fromCol, task.toCol)
+            success = this.movePallet(task.row, task.fromCol, task.toCol)
+        } else {
+            success = this.setSlotData(task.palletId, task.plateNumber)
         }
 
-        return this.setSlotData(task.palletId, task.plateNumber)
+        onTaskExecuted?.({
+            task,
+            success,
+            remainingTasks: this.taskQueue.length,
+        })
+
+        return success
     }
 
     /**
      * Executes all pending tasks in queue.
      *
+     * @param onTaskExecuted Optional callback invoked after each task execution.
      * @returns `true` when all tasks succeed; otherwise `false`.
      */
-    executeAllTasks(): boolean {
+    executeAllTasks(onTaskExecuted?: TaskExecutionCallback): boolean {
         while (this.taskQueue.length > 0) {
-            const success = this.executeNextTask()
+            const success = this.executeNextTask(onTaskExecuted)
             if (!success) {
                 return false
             }
