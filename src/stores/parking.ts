@@ -17,21 +17,25 @@ export const useParkingStore = defineStore('parking', () => {
         localStorage.setItem('events', JSON.stringify(events.value))
     }
 
-    function updateAllSlot(newSlots: ParkingSlot[]) {
+    function updateAllSlot(newSlots: ParkingSlot[][]) {
         slots.value = newSlots
         localStorage.setItem('slots', JSON.stringify(newSlots))
     }
 
-    const slots = ref<ParkingSlot[]>([])
+    const slots = ref<ParkingSlot[][]>([])
 
     const events = ref<ParkingEvent[]>([])
 
-    const totalSlots = computed(() => slots.value.length)
-    const noPalletCount = computed(() => slots.value.filter((s) => s.status === 'NO_PALLET').length)
-    const emptyCount = computed(() => slots.value.filter((s) => s.status === 'EMPTY').length)
-    const occupiedCount = computed(() => slots.value.filter((s) => s.status === 'OCCUPIED').length)
+    const totalSlots = computed(() => slots.value.flat().length)
+    const noPalletCount = computed(
+        () => slots.value.flat().filter((s) => s.status === 'NO_PALLET').length,
+    )
+    const emptyCount = computed(() => slots.value.flat().filter((s) => s.status === 'EMPTY').length)
+    const occupiedCount = computed(
+        () => slots.value.flat().filter((s) => s.status === 'OCCUPIED').length,
+    )
     const processingCount = computed(
-        () => slots.value.filter((s) => s.status === 'PROCESSING').length,
+        () => slots.value.flat().filter((s) => s.status === 'PROCESSING').length,
     )
 
     return {

@@ -65,11 +65,12 @@ function statusBadgeClass(status: string) {
       Sơ đồ bãi đỗ
     </h2>
     <div class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 min-h-0 flex-1">
-      <div
-        v-for="slot in store.slots"
-        :key="slot.id"
-        :class="[slotClasses(slot.status), filterClasses(slot.status)]"
-      >
+      <template v-for="(row, rowIndex) in store.slots" :key="rowIndex">
+        <div
+          v-for="slot in row"
+          :key="slot.id"
+          :class="[slotClasses(slot.status), filterClasses(slot.status)]"
+        >
         <!-- ID label -->
         <span class="text-lg font-bold leading-none">{{ slot.id }}</span>
 
@@ -84,7 +85,8 @@ function statusBadgeClass(status: string) {
             {{ slot.plateNumber || statusLabel(slot.status) }}
           </span>
         </div>
-      </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>

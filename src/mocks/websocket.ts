@@ -44,32 +44,37 @@ function randomHex() {
     return bytes.join(':')
 }
 
-function buildInitialSlots(): ParkingSlot[] {
-    const slots: ParkingSlot[] = []
+function buildInitialSlots(): ParkingSlot[][] {
     const rows = ['A', 'B', 'C']
     const cols = [1, 2, 3, 4]
     const noPalletIds = new Set<string>([`B${randInt(1, 4)}`, `C${randInt(1, 4)}`])
-    for (const r of rows) {
-        for (const c of cols) {
+    return rows.map((r) =>
+        cols.map((c) => {
             const id = `${r}${c}`
             const status = noPalletIds.has(id) ? 'NO_PALLET' : 'EMPTY'
-            slots.push({ id, status })
-        }
-    }
-    return slots
+            return { id, status }
+        }),
+    )
 }
 
-function mutateSlots(slots: ParkingSlot[]): {
-    slots: ParkingSlot[]
+function mutateSlots(slots: ParkingSlot[][]): {
+    slots: ParkingSlot[][]
     event?: ParkingEvent
 } {
     if (slots.length === 0) return { slots }
 
-    const newSlots = slots.map((s) => ({ ...s }))
+    const newSlots = slots.map((row) => row.map((s) => ({ ...s })))
 
-    const rowOf = (id: string) => id[0]
+    const rowLetters = ['A', 'B', 'C']
+    const rowOf = (id: string) => id[0]!
     const colOf = (id: string) => Number(id.slice(1))
-    const slotAt = (row: string, col: number) => newSlots.find((s) => s.id === `${row}${col}`)
+    const slotAt = (row: string, col: number): ParkingSlot | undefined => {
+        const rowIndex = rowLetters.indexOf(row)
+        if (rowIndex === -1) return undefined
+        return newSlots[rowIndex]?.[col - 1]
+    }
+
+    const allSlots = newSlots.flat()
 
     function swapSlots(a: ParkingSlot, b: ParkingSlot) {
         const tmpStatus = a.status
@@ -97,7 +102,7 @@ function mutateSlots(slots: ParkingSlot[]): {
     }
 
     // ── Priority 1: Advance any PROCESSING slot ───────────────────────────
-    const processingSlots = newSlots.filter((s) => s.status === 'PROCESSING')
+    const processingSlots = allSlots.filter((s) => s.status === 'PROCESSING')
     if (processingSlots.length > 0) {
         const cur = pick(processingSlots, 0)
         if (cur.plateNumber) {
@@ -118,7 +123,7 @@ function mutateSlots(slots: ParkingSlot[]): {
     }
 
     // ── Priority 2: Advance PENDING slots (middle and top rows) ──────────
-    const pendingSlots = newSlots.filter((s) => s.status === 'PENDING')
+    const pendingSlots = allSlots.filter((s) => s.status === 'PENDING')
     if (pendingSlots.length > 0) {
         const cur = pick(pendingSlots, 0)
         const row = rowOf(cur.id)
@@ -149,7 +154,7 @@ function mutateSlots(slots: ParkingSlot[]): {
             }
 
             // Slide PENDING horizontally toward the column that has A-row NO_PALLET
-            const aNoPallet = newSlots.find((s) => rowOf(s.id) === 'A' && s.status === 'NO_PALLET')
+            const aNoPallet = allSlots.find((s) => rowOf(s.id) === 'A' && s.status === 'NO_PALLET')
             if (aNoPallet) {
                 const npCol = colOf(aNoPallet.id)
                 const dir = npCol > col ? 1 : -1
@@ -246,7 +251,7 @@ function mutateSlots(slots: ParkingSlot[]): {
     }
 
     // ── Priority 3: Randomly start a car exit (OCCUPIED → PROCESSING) ────
-    const occupiedSlots = newSlots.filter((s) => s.status === 'OCCUPIED')
+    const occupiedSlots = allSlots.filter((s) => s.status === 'OCCUPIED')
     if (occupiedSlots.length > 0 && Math.random() < 0.4) {
         const idx = Math.floor(Math.random() * occupiedSlots.length)
         const cur = pick(occupiedSlots, idx)
@@ -258,7 +263,7 @@ function mutateSlots(slots: ParkingSlot[]): {
     }
 
     // ── Priority 4: Start a new parking attempt for an EMPTY slot ────────
-    const emptySlots = newSlots.filter((s) => s.status === 'EMPTY')
+    const emptySlots = allSlots.filter((s) => s.status === 'EMPTY')
     if (emptySlots.length > 0) {
         const idx = Math.floor(Math.random() * emptySlots.length)
         const cur = pick(emptySlots, idx)
@@ -320,7 +325,7 @@ class MockWebSocketClient implements IWebSocketClient {
     private connected = false
     private stopped = false
     private timers: Array<ReturnType<typeof setInterval> | ReturnType<typeof setTimeout>> = []
-    private slots: ParkingSlot[] = buildInitialSlots()
+    private slots: ParkingSlot[][] = buildInitialSlots()
 
     constructor(options: WebSocketOptions = {}) {
         this.options = options

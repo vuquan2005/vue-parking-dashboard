@@ -8,14 +8,18 @@ import type { ParkingEvent, ParkingSlot, WsMessage } from '@/type'
 const isConnected = ref(false)
 let isInitialized = false
 
-function isParkingSlotArray(data: unknown): data is ParkingSlot[] {
+function isParkingSlotArray(data: unknown): data is ParkingSlot[][] {
     if (!Array.isArray(data)) return false
     return data.every(
-        (s) =>
-            s &&
-            typeof s === 'object' &&
-            typeof (s as Record<string, unknown>).id === 'string' &&
-            typeof (s as Record<string, unknown>).status === 'string',
+        (row) =>
+            Array.isArray(row) &&
+            row.every(
+                (s) =>
+                    s &&
+                    typeof s === 'object' &&
+                    typeof (s as Record<string, unknown>).id === 'string' &&
+                    typeof (s as Record<string, unknown>).status === 'string',
+            ),
     )
 }
 
