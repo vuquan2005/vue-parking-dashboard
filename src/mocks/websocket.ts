@@ -48,11 +48,7 @@ function buildInitialSlots(): ParkingSlot[] {
     const slots: ParkingSlot[] = []
     const rows = ['A', 'B', 'C']
     const cols = [1, 2, 3, 4]
-    const noPalletIds = new Set<string>([
-        `A${randInt(1, 4)}`,
-        `B${randInt(1, 4)}`,
-        `C${randInt(1, 4)}`,
-    ])
+    const noPalletIds = new Set<string>([`B${randInt(1, 4)}`, `C${randInt(1, 4)}`])
     for (const r of rows) {
         for (const c of cols) {
             const id = `${r}${c}`
@@ -73,8 +69,7 @@ function mutateSlots(slots: ParkingSlot[]): {
 
     const rowOf = (id: string) => id[0]
     const colOf = (id: string) => Number(id.slice(1))
-    const slotAt = (row: string, col: number) =>
-        newSlots.find((s) => s.id === `${row}${col}`)
+    const slotAt = (row: string, col: number) => newSlots.find((s) => s.id === `${row}${col}`)
 
     function swapSlots(a: ParkingSlot, b: ParkingSlot) {
         const tmpStatus = a.status
@@ -154,9 +149,7 @@ function mutateSlots(slots: ParkingSlot[]): {
             }
 
             // Slide PENDING horizontally toward the column that has A-row NO_PALLET
-            const aNoPallet = newSlots.find(
-                (s) => rowOf(s.id) === 'A' && s.status === 'NO_PALLET',
-            )
+            const aNoPallet = newSlots.find((s) => rowOf(s.id) === 'A' && s.status === 'NO_PALLET')
             if (aNoPallet) {
                 const npCol = colOf(aNoPallet.id)
                 const dir = npCol > col ? 1 : -1
@@ -186,8 +179,7 @@ function mutateSlots(slots: ParkingSlot[]): {
             // Top row: needs BOTH the B-slot and the A-slot in the same column to be NO_PALLET
             const bBelow = slotAt('B', col)
             const aBelow = slotAt('A', col)
-            const bothClear =
-                bBelow?.status === 'NO_PALLET' && aBelow?.status === 'NO_PALLET'
+            const bothClear = bBelow?.status === 'NO_PALLET' && aBelow?.status === 'NO_PALLET'
 
             if (bothClear) {
                 // Both levels below are clear — begin entry
