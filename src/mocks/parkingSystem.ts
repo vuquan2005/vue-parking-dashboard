@@ -1,8 +1,13 @@
-class ParkingSystemStore {
+type ParkingTask =
+    | { type: 'MOVE_PALLET'; row: number; fromCol: number; toCol: number }
+    | { type: 'SET_SLOT_DATA'; palletId: number; plateNumber: string }
+
+class ParkingSystem {
     private static readonly EMPTY_SLOT_ID = 0
 
     private palletIdGrid: number[][] = []
     private palletMetadata: Map<number, string> = new Map()
+    private taskQueue: ParkingTask[] = []
 
     /**
      * Creates a parking grid with one empty slot per row (except the first row),
@@ -23,7 +28,7 @@ class ParkingSystemStore {
 
             for (let colIndex = 0; colIndex < this._totalCols; colIndex++) {
                 if (colIndex === emptyColIndex && rowIndex !== 0) {
-                    rowData.push(ParkingSystemStore.EMPTY_SLOT_ID)
+                    rowData.push(ParkingSystem.EMPTY_SLOT_ID)
                 } else {
                     rowData.push(nextPalletId)
                     this.palletMetadata.set(nextPalletId, '')
@@ -34,10 +39,7 @@ class ParkingSystemStore {
             this.palletIdGrid.push(rowData)
         }
 
-        this.palletMetadata.set(
-            ParkingSystemStore.EMPTY_SLOT_ID,
-            'This is an undefined slot with ID 0',
-        )
+        this.palletMetadata.set(ParkingSystem.EMPTY_SLOT_ID, 'This is an undefined slot with ID 0')
     }
 
     /**
@@ -126,7 +128,7 @@ class ParkingSystemStore {
         const fromId = this.getSlotPalletId(fromCol, row)
         const toId = this.getSlotPalletId(toCol, row)
 
-        return fromId > 0 && toId === ParkingSystemStore.EMPTY_SLOT_ID
+        return fromId > 0 && toId === ParkingSystem.EMPTY_SLOT_ID
     }
 
     /**
@@ -146,7 +148,7 @@ class ParkingSystemStore {
 
         const fromId = this.getSlotPalletId(fromCol, row)
 
-        this.palletIdGrid[row]![fromCol] = ParkingSystemStore.EMPTY_SLOT_ID
+        this.palletIdGrid[row]![fromCol] = ParkingSystem.EMPTY_SLOT_ID
         this.palletIdGrid[row]![toCol] = fromId
 
         return true
@@ -191,7 +193,7 @@ class ParkingSystemStore {
         // Except for the bottom row, metadata can be set only when
         // every slot below the same column is empty.
         for (let row = position.row + 1; row < this._totalRows; row++) {
-            if (this.getSlotPalletId(position.col, row) !== ParkingSystemStore.EMPTY_SLOT_ID) {
+            if (this.getSlotPalletId(position.col, row) !== ParkingSystem.EMPTY_SLOT_ID) {
                 return false
             }
         }
@@ -213,6 +215,109 @@ class ParkingSystemStore {
 
         this.palletMetadata.set(palletId, plateNumber)
         return true
+    }
+
+    /**
+     * Generates sequential tasks to clear the path and set slot metadata.
+     *
+     * A new queue can be generated only when there are no pending tasks.
+     *
+     * @param palletId Target pallet identifier.
+     * @param plateNumber Plate number to assign.
+     * @returns `true` when queue generation succeeds; otherwise `false`.
+     */
+    generateParkingQueue(palletId: number, plateNumber: string): boolean {
+        if (this.taskQueue.length > 0) {
+            return false
+        }
+
+        const targetPos = this.findPalletPosition(palletId)
+        if (!targetPos) {
+            return false
+        }
+
+        const { row: targetRow, col: targetCol } = targetPos
+
+        for (let row = targetRow + 1; row < this._totalRows; row++) {
+            let emptyCol = -1
+
+            for (let col = 0; col < this._totalCols; col++) {
+                if (this.palletIdGrid[row]![col] === ParkingSystem.EMPTY_SLOT_ID) {
+                    emptyCol = col
+                    break
+                }
+            }
+
+            if (emptyCol === -1) {
+                continue
+            }
+
+            if (emptyCol < targetCol) {
+                for (let col = emptyCol; col < targetCol; col++) {
+                    this.taskQueue.push({
+                        type: 'MOVE_PALLET',
+                        row,
+                        fromCol: col + 1,
+                        toCol: col,
+                    })
+                }
+            } else if (emptyCol > targetCol) {
+                for (let col = emptyCol; col > targetCol; col--) {
+                    this.taskQueue.push({
+                        type: 'MOVE_PALLET',
+                        row,
+                        fromCol: col - 1,
+                        toCol: col,
+                    })
+                }
+            }
+        }
+
+        this.taskQueue.push({ type: 'SET_SLOT_DATA', palletId, plateNumber })
+        return true
+    }
+
+    /**
+     * Executes the next task in queue.
+     *
+     * @returns `true` when task execution succeeds; otherwise `false`.
+     */
+    executeNextTask(): boolean {
+        const task = this.taskQueue.shift()
+        if (!task) {
+            return false
+        }
+
+        if (task.type === 'MOVE_PALLET') {
+            return this.movePallet(task.row, task.fromCol, task.toCol)
+        }
+
+        return this.setSlotData(task.palletId, task.plateNumber)
+    }
+
+    /**
+     * Executes all pending tasks in queue.
+     *
+     * @returns `true` when all tasks succeed; otherwise `false`.
+     */
+    executeAllTasks(): boolean {
+        while (this.taskQueue.length > 0) {
+            const success = this.executeNextTask()
+            if (!success) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    /**
+     * Returns a shallow copy of pending tasks for UI/debugging.
+     *
+     * @returns Pending tasks in execution order.
+     */
+    getPendingTasks(): ParkingTask[] {
+        return [...this.taskQueue]
     }
 
     /**
