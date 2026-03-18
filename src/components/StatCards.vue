@@ -16,7 +16,7 @@ function isActive(filter: FilterType) {
       class="stat-card rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm transition-all hover:shadow-md cursor-pointer select-none"
       :class="{ 'ring-1 ring-gray-400 scale-[1.02] shadow-md': isActive(null) }" @click="store.selectedFilter = null">
       <p class="mb-1 text-xs font-semibold tracking-wider text-gray-400 uppercase">Tổng số ô</p>
-      <p class="text-3xl font-bold text-gray-800">{{ store.totalSlots - 2 }}</p>
+      <p class="text-3xl font-bold text-gray-800">{{ store.totalSlots - store.noPalletCount }}</p>
     </div>
 
     <!-- Trống (có pallet, chưa có xe) -->
