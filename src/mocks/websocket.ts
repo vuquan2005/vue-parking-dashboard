@@ -150,7 +150,7 @@ function mutateSlots(slots: ParkingSlot[]): {
 function mockScanResults(): BeaconNetwork[] {
     const base: BeaconNetwork[] = [
         { ssid: 'ETEK_PARKING', rssi: -42, encryption: 3, channel: 6 },
-        { ssid: 'VuQuan-Home', rssi: -55, encryption: 3, channel: 11 },
+        { ssid: 'VuQuan-Home', rssi: -55, encryption: 2, channel: 11 },
         { ssid: 'Cafe_Free_WiFi', rssi: -68, encryption: 0, channel: 1 },
         { ssid: 'Warehouse_AP', rssi: -72, encryption: 7, channel: 3 },
         { ssid: 'IoT-Lab', rssi: -80, encryption: 4, channel: 9 },
@@ -159,7 +159,7 @@ function mockScanResults(): BeaconNetwork[] {
 }
 
 function buildWiFiStatus(overrides: Partial<ESPWiFiStatus> = {}): ESPWiFiStatus {
-    const uptime = Math.max(0, Math.floor(performance.now() / 1000))
+    const uptime = Math.max(0, Math.floor(performance.now()))
     return {
         type: 'wifi_status',
         mode: WiFiMode.STA,
@@ -207,13 +207,13 @@ class MockWebSocketClient implements IWebSocketClient {
                 this.options.onConnected?.()
                 this.emit({ type: 'wifi_status', data: buildWiFiStatus({ connected: true }) })
                 this.emit({ type: 'parking_update', data: this.slots })
-            }, 150),
+            }, 1500),
         )
 
         this.timers.push(
             setInterval(() => {
                 this.emit({ type: 'wifi_status', data: buildWiFiStatus() })
-            }, 1500),
+            }, 5000),
         )
 
         this.timers.push(
@@ -306,4 +306,20 @@ class MockWebSocketClient implements IWebSocketClient {
     }
 }
 
-export const mwsClient: IWebSocketClient = new MockWebSocketClient()
+let client: IWebSocketClient
+
+if (import.meta.hot) {
+    if (!import.meta.hot.data.mwsClient) {
+        import.meta.hot.data.mwsClient = new MockWebSocketClient()
+    }
+
+    client = import.meta.hot.data.mwsClient
+
+    import.meta.hot.dispose(() => {
+        client.disconnect()
+    })
+} else {
+    client = new MockWebSocketClient()
+}
+
+export const mwsClient = client

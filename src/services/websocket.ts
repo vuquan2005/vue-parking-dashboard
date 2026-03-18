@@ -193,3 +193,9 @@ export class WebSocketClient implements IWebSocketClient {
 const isMockMode = String(import.meta.env.VITE_WS_MOCK || '').toLowerCase() === 'true'
 
 export const wsClient: IWebSocketClient = isMockMode ? mwsClient : new WebSocketClient()
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        wsClient.disconnect()
+    })
+}
