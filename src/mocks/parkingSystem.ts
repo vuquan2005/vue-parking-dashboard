@@ -100,6 +100,36 @@ class ParkingSystemStore {
     }
 
     /**
+     * Checks whether a pallet can be moved from one coordinate to another.
+     *
+     * Rules:
+     * - Both coordinates must be valid in the same row.
+     * - Source and destination must be horizontally adjacent.
+     * - Source must contain a pallet ID greater than `0`.
+     * - Destination must be an empty slot (ID `0`).
+     *
+     * @param row Source and destination row index.
+     * @param fromCol Source column index.
+     * @param toCol Destination column index.
+     * @returns `true` when move is valid; otherwise `false`.
+     */
+    canMovePallet(row: number, fromCol: number, toCol: number): boolean {
+        if (!this.isValidCoordinate(fromCol, row) || !this.isValidCoordinate(toCol, row)) {
+            return false
+        }
+
+        // Allow movement only to horizontally adjacent slots.
+        if (Math.abs(fromCol - toCol) !== 1) {
+            return false
+        }
+
+        const fromId = this.getSlotPalletId(fromCol, row)
+        const toId = this.getSlotPalletId(toCol, row)
+
+        return fromId > 0 && toId === ParkingSystemStore.EMPTY_SLOT_ID
+    }
+
+    /**
      * Moves a pallet from one coordinate to another.
      * Move is valid only when source has a pallet ID greater than `0`
      * and destination is an empty slot (ID `0`).
@@ -110,15 +140,11 @@ class ParkingSystemStore {
      * @returns `true` when the move succeeds; otherwise `false`.
      */
     movePallet(row: number, fromCol: number, toCol: number): boolean {
-        if (!this.isValidCoordinate(fromCol, row) || !this.isValidCoordinate(toCol, row)) {
+        if (!this.canMovePallet(row, fromCol, toCol)) {
             return false
         }
 
         const fromId = this.getSlotPalletId(fromCol, row)
-        const toId = this.getSlotPalletId(toCol, row)
-
-        // Move only when source has a pallet and destination is empty.
-        if (fromId <= 0 || toId !== ParkingSystemStore.EMPTY_SLOT_ID) return false
 
         this.palletIdGrid[row]![fromCol] = ParkingSystemStore.EMPTY_SLOT_ID
         this.palletIdGrid[row]![toCol] = fromId
@@ -137,13 +163,17 @@ class ParkingSystemStore {
     }
 
     /**
-     * Updates plate number metadata for a pallet.
+     * Checks whether metadata can be set for a pallet.
+     *
+     * Rules:
+     * - Pallet ID must exist and be greater than `0`.
+     * - Bottom-row pallets are always settable.
+     * - For non-bottom rows, every slot below in the same column must be empty.
      *
      * @param palletId Pallet identifier.
-     * @param plateNumber New plate number value.
-     * @returns `true` when update succeeds, `false` if pallet ID does not exist.
+     * @returns `true` when metadata can be set; otherwise `false`.
      */
-    updateSlotData(palletId: number, plateNumber: string): boolean {
+    canSetSlotData(palletId: number): boolean {
         if (palletId <= 0 || !this.palletMetadata.has(palletId)) {
             return false
         }
@@ -154,40 +184,35 @@ class ParkingSystemStore {
         }
 
         const isBottomRow = position.row === this._totalRows - 1
-        let canUpdate = isBottomRow
+        if (isBottomRow) {
+            return true
+        }
 
-        // Except for the bottom row, metadata can be updated only when
+        // Except for the bottom row, metadata can be set only when
         // every slot below the same column is empty.
-        if (!isBottomRow) {
-            canUpdate = true
-            for (let row = position.row + 1; row < this._totalRows; row++) {
-                if (this.getSlotPalletId(position.col, row) !== ParkingSystemStore.EMPTY_SLOT_ID) {
-                    canUpdate = false
-                    break
-                }
+        for (let row = position.row + 1; row < this._totalRows; row++) {
+            if (this.getSlotPalletId(position.col, row) !== ParkingSystemStore.EMPTY_SLOT_ID) {
+                return false
             }
         }
 
-        if (!canUpdate) {
-            return false
-        }
-
-        this.palletMetadata.set(palletId, plateNumber)
         return true
     }
 
     /**
-     * Sets metadata for a pallet ID.
-     *
-     * This is a semantic alias of {@link updateSlotData} to provide
-     * a clearer setter-style API.
+     * Updates plate number metadata for a pallet.
      *
      * @param palletId Pallet identifier.
      * @param plateNumber New plate number value.
      * @returns `true` when update succeeds; otherwise `false`.
      */
     setSlotData(palletId: number, plateNumber: string): boolean {
-        return this.updateSlotData(palletId, plateNumber)
+        if (!this.canSetSlotData(palletId)) {
+            return false
+        }
+
+        this.palletMetadata.set(palletId, plateNumber)
+        return true
     }
 
     /**
