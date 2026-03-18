@@ -1,10 +1,51 @@
 <script setup lang="ts">
 import { useParkingStore } from '@/stores/parking'
 import { Clock, Car } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 const store = useParkingStore()
 const eventsNewestFirst = computed(() => [...store.events].reverse())
+const highlightedEventId = ref<number | null>(null)
+const latestEventId = ref<number | null>(null)
+let highlightTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  eventsNewestFirst,
+  (events) => {
+    const newestId = events[0]?.id ?? null
+
+    if (newestId === null) {
+      return
+    }
+
+    // bỏ qua sự kiện đầu tiên khi khởi động để tránh highlight nhầm
+    // if (latestEventId.value === null) {
+    //   latestEventId.value = newestId
+    //   return
+    // }
+
+    if (newestId !== latestEventId.value) {
+      highlightedEventId.value = newestId
+      latestEventId.value = newestId
+
+      if (highlightTimer) {
+        clearTimeout(highlightTimer)
+      }
+
+      highlightTimer = setTimeout(() => {
+        highlightedEventId.value = null
+        highlightTimer = null
+      }, 1600)
+    }
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  if (highlightTimer) {
+    clearTimeout(highlightTimer)
+  }
+})
 
 function formatUnixToUtc7(unixTimestamp: number): string {
   const timestampMs = unixTimestamp < 1_000_000_000_000 ? unixTimestamp * 1000 : unixTimestamp
@@ -28,11 +69,14 @@ function formatUnixToUtc7(unixTimestamp: number): string {
       Lịch sử ra vào
     </h2>
 
-    <div class="flex flex-col gap-3 overflow-y-auto pr-2 min-h-0 flex-1">
+    <TransitionGroup name="log-list" tag="div" class="flex flex-col gap-3 overflow-y-auto pr-2 min-h-0 flex-1">
       <div
         v-for="event in eventsNewestFirst"
         :key="event.id"
-        class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-shadow hover:shadow-sm"
+        :class="[
+          'rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-shadow hover:shadow-sm',
+          event.id === highlightedEventId ? 'log-item-highlight' : '',
+        ]"
       >
         <!-- Header row: badge + timestamp -->
         <div class="mb-2 flex items-center justify-between">
@@ -72,6 +116,45 @@ function formatUnixToUtc7(unixTimestamp: number): string {
           </p>
         </div>
       </div>
-    </div>
+    </TransitionGroup>
   </div>
 </template>
+
+<style scoped>
+.log-list-enter-active,
+.log-list-leave-active {
+  transition: all 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.log-list-enter-from,
+.log-list-leave-to {
+  opacity: 0;
+  transform: translateY(-12px) scale(0.98);
+}
+
+.log-list-move {
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.log-item-highlight {
+  animation: log-item-flash 1.6s ease;
+}
+
+@keyframes log-item-flash {
+  0% {
+    background-color: rgba(255, 255, 153, 0.2);
+    border-color: rgba(215, 215, 0, 0.7);
+    box-shadow: 0 0 8px rgba(255, 255, 153, 0.4);
+  }
+
+  30% {
+    background-color: rgba(255, 255, 102, 0.2);
+    border-color: rgba(216, 216, 0, 0.7);
+    box-shadow: 0 0 12px rgba(255, 255, 102, 0.4);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+</style>
