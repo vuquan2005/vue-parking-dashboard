@@ -45,9 +45,12 @@ function buildInitialSlots(): ParkingSlot[] {
     const slots: ParkingSlot[] = []
     const rows = ['A', 'B', 'C']
     const cols = [1, 2, 3, 4]
+    const noPalletIds = new Set<string>([`B${randInt(1, 4)}`, `C${randInt(1, 4)}`])
     for (const r of rows) {
         for (const c of cols) {
-            slots.push({ id: `${r}${c}`, status: 'EMPTY' })
+            const id = `${r}${c}`
+            const status = noPalletIds.has(id) ? 'NO_PALLET' : 'EMPTY'
+            slots.push({ id, status })
         }
     }
     return slots
