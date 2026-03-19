@@ -48,7 +48,7 @@ export function useWebSocket() {
             isConnected.value = false
         }
 
-        const onMessage = (parsed: WsMessage) => routeMessage(parsed)
+        const onMessage = (message: WsMessage) => routeMessage(message)
 
         wsClient.options.onConnected = onConnected
         wsClient.options.onDisconnected = onDisconnected
@@ -56,40 +56,42 @@ export function useWebSocket() {
         wsClient.connect()
     }
 
-    const routeMessage = (parsed: WsMessage) => {
-        if (!parsed || !parsed.type) return
+    const routeMessage = (message: WsMessage) => {
+        if (!message || !message.type) return
 
-        switch (parsed.type) {
+        switch (message.type) {
             case 'scan_results':
-                if (Array.isArray(parsed.data)) {
-                    configStore.handleBeaconData(parsed.data)
+                if (Array.isArray(message.data)) {
+                    configStore.handleBeaconData(message.data)
                 }
                 break
 
             case 'wifi_status':
-                processWifiStatus(parsed)
+                processWifiStatus(message)
                 break
 
             case 'parking_update':
-                if (isParkingSlotArray(parsed.data)) {
-                    parkingStore.updateAllSlot(parsed.data)
+                if (isParkingSlotArray(message.data)) {
+                    parkingStore.updateAllSlot(message.data)
                 }
                 break
 
             case 'parking_event':
-                if (isParkingEvent(parsed.data)) {
-                    parkingStore.addEvent(parsed.data)
+                if (isParkingEvent(message.data)) {
+                    parkingStore.addEvent(message.data)
                 }
                 break
 
             default:
-                console.log(`[WebSocket] ℹ️ Unhandled event type: ${parsed.type}`)
+                console.log(`[WebSocket] ℹ️ Unhandled event type: ${message.type}`)
                 break
         }
     }
 
-    const processWifiStatus = (parsed: WsMessage) => {
-        const statusData = (parsed.data || parsed) as ReturnType<typeof useConfigStore>['espStatus']
+    const processWifiStatus = (message: WsMessage) => {
+        const statusData = (message.data || message) as ReturnType<
+            typeof useConfigStore
+        >['espStatus']
         configStore.handleWiFiStatus(statusData)
     }
 
