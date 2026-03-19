@@ -13,7 +13,21 @@ enum SlotStatus {
     PENDING,
 }
 
-type TaskExecutionCallback = (result: TaskExecutionResult) => void
+type ParkingLogEntry = {
+    /**
+     * Matches the current `palletMetadataVersion` at the time of the log entry.
+     * This value only increases when `generateParkingQueue()` succeeds.
+     */
+    id: number
+    timestamp: string
+    type: 'QUEUE_CREATED' | 'TASK_EXECUTED'
+    plateNumber?: string
+    slotId?: string
+    status?: SlotStatus
+    process?: number
+
+    details?: Record<string, unknown>
+}
 
 export class ParkingSystem {
     private static readonly EMPTY_SLOT_ID = 0
@@ -23,6 +37,7 @@ export class ParkingSystem {
     private palletStatus: Map<number, SlotStatus | null> = new Map()
     private palletMetadata: Map<number, string> = new Map()
     private taskQueue: ParkingTask[] = []
+    private logEntries: ParkingLogEntry[] = []
 
     /**
      * Creates a parking grid with one empty slot per row (except the first row),
@@ -287,6 +302,26 @@ export class ParkingSystem {
     }
 
     /**
+     * Adds a new log entry.
+     *
+     * The log entry's `id` is tied to the current `palletMetadataVersion`.
+     */
+    private addLogEntry(entry: Omit<ParkingLogEntry, 'id' | 'timestamp'>) {
+        this.logEntries.push({
+            id: ParkingSystem.palletMetadataVersion,
+            timestamp: new Date().getTime().toString(),
+            ...entry,
+        })
+    }
+
+    /**
+     * Returns all log entries.
+     */
+    getLogs(): ParkingLogEntry[] {
+        return [...this.logEntries]
+    }
+
+    /**
      * Generates sequential tasks to clear the path and set slot metadata.
      *
      * A new queue can be generated only when there are no pending tasks.
@@ -356,7 +391,22 @@ export class ParkingSystem {
             }
         }
 
+        // Increment global version once per parking queue generation.
         ParkingSystem.palletMetadataVersion++
+
+        this.addLogEntry({
+            type: 'QUEUE_CREATED',
+            plateNumber,
+            slotId: String(palletId),
+            status: SlotStatus.PENDING,
+            process: this.taskQueue.length,
+            details: {
+                palletId,
+                plateNumber,
+                totalTasks: this.taskQueue.length,
+            },
+        })
+
         return true
     }
 
@@ -366,7 +416,7 @@ export class ParkingSystem {
      * @param onTaskExecuted Optional callback invoked after the task is executed.
      * @returns `true` when task execution succeeds; otherwise `false`.
      */
-    executeNextTask(onTaskExecuted?: TaskExecutionCallback): boolean {
+    executeNextTask(): boolean {
         const task = this.taskQueue.shift()
         if (!task) {
             return false
@@ -401,10 +451,29 @@ export class ParkingSystem {
             this.palletStatus.set(processingPalletId, SlotStatus.PENDING)
         }
 
-        onTaskExecuted?.({
-            task,
-            success,
-            remainingTasks: this.taskQueue.length,
+        const logSlotId = processingPalletId?.toString()
+        const logStatus =
+            processingPalletId != null
+                ? (this.getSlotStatus(processingPalletId) ?? undefined)
+                : undefined
+        const logPlateNumber =
+            task.type === 'SET_SLOT_DATA'
+                ? task.plateNumber
+                : processingPalletId != null
+                  ? (this.getSlotData(processingPalletId) ?? undefined)
+                  : undefined
+
+        this.addLogEntry({
+            type: 'TASK_EXECUTED',
+            slotId: logSlotId,
+            plateNumber: logPlateNumber,
+            status: logStatus,
+            process: this.taskQueue.length,
+            details: {
+                task,
+                success,
+                remainingTasks: this.taskQueue.length,
+            },
         })
 
         return success
@@ -416,9 +485,9 @@ export class ParkingSystem {
      * @param onTaskExecuted Optional callback invoked after each task execution.
      * @returns `true` when all tasks succeed; otherwise `false`.
      */
-    executeAllTasks(onTaskExecuted?: TaskExecutionCallback): boolean {
+    executeAllTasks(): boolean {
         while (this.taskQueue.length > 0) {
-            const success = this.executeNextTask(onTaskExecuted)
+            const success = this.executeNextTask()
             if (!success) {
                 return false
             }
