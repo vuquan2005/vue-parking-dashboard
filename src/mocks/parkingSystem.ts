@@ -7,6 +7,13 @@ type TaskExecutionResult = {
     success: boolean
     remainingTasks: number
 }
+enum SlotStatus {
+    NO_PALLET,
+    EMPTY,
+    OCCUPIED,
+    PROCESSING,
+    PENDING,
+}
 
 type TaskExecutionCallback = (result: TaskExecutionResult) => void
 
@@ -15,6 +22,7 @@ export class ParkingSystem {
     private static palletMetadataVersion = 0
 
     private palletIdGrid: number[][] = []
+    private palletStatus: Map<number, SlotStatus> = new Map()
     private palletMetadata: Map<number, string> = new Map()
     private taskQueue: ParkingTask[] = []
 
@@ -38,9 +46,14 @@ export class ParkingSystem {
             for (let colIndex = 0; colIndex < this._totalCols; colIndex++) {
                 if (colIndex === emptyColIndex && rowIndex !== 0) {
                     rowData.push(ParkingSystem.EMPTY_SLOT_ID)
+                    this.palletStatus.set(
+                        ParkingSystem.EMPTY_SLOT_ID,
+                        SlotStatus.NO_PALLET,
+                    )
                 } else {
                     rowData.push(nextPalletId)
                     this.palletMetadata.set(nextPalletId, '')
+                    this.palletStatus.set(nextPalletId, SlotStatus.EMPTY)
                     nextPalletId++
                 }
             }
@@ -48,7 +61,11 @@ export class ParkingSystem {
             this.palletIdGrid.push(rowData)
         }
 
-        this.palletMetadata.set(ParkingSystem.EMPTY_SLOT_ID, 'This is an undefined slot with ID 0')
+        this.palletMetadata.set(
+            ParkingSystem.EMPTY_SLOT_ID,
+            'This is an undefined slot with ID 0',
+        )
+        this.palletStatus.set(ParkingSystem.EMPTY_SLOT_ID, SlotStatus.NO_PALLET)
     }
 
     /**
@@ -137,7 +154,10 @@ export class ParkingSystem {
      * @returns `true` when move is valid; otherwise `false`.
      */
     canMovePallet(row: number, fromCol: number, toCol: number): boolean {
-        if (!this.isValidCoordinate(fromCol, row) || !this.isValidCoordinate(toCol, row)) {
+        if (
+            !this.isValidCoordinate(fromCol, row) ||
+            !this.isValidCoordinate(toCol, row)
+        ) {
             return false
         }
 
@@ -235,6 +255,15 @@ export class ParkingSystem {
         }
 
         this.palletMetadata.set(palletId, plateNumber)
+
+        // Update slot status based on whether plate number is empty.
+        // - Empty string => EMPTY
+        // - Non-empty string => OCCUPIED
+        this.palletStatus.set(
+            palletId,
+            plateNumber === '' ? SlotStatus.EMPTY : SlotStatus.OCCUPIED,
+        )
+
         return true
     }
 
