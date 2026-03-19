@@ -9,8 +9,6 @@ type TaskExecutionResult = {
 }
 enum SlotStatus {
     NO_PALLET,
-    EMPTY,
-    OCCUPIED,
     PROCESSING,
     PENDING,
 }
@@ -22,7 +20,7 @@ export class ParkingSystem {
     private static palletMetadataVersion = 0
 
     private palletIdGrid: number[][] = []
-    private palletStatus: Map<number, SlotStatus> = new Map()
+    private palletStatus: Map<number, SlotStatus | null> = new Map()
     private palletMetadata: Map<number, string> = new Map()
     private taskQueue: ParkingTask[] = []
 
@@ -53,7 +51,8 @@ export class ParkingSystem {
                 } else {
                     rowData.push(nextPalletId)
                     this.palletMetadata.set(nextPalletId, '')
-                    this.palletStatus.set(nextPalletId, SlotStatus.EMPTY)
+                    // Status is derived from plate number; track only task-related states.
+                    this.palletStatus.set(nextPalletId, null)
                     nextPalletId++
                 }
             }
@@ -256,15 +255,35 @@ export class ParkingSystem {
 
         this.palletMetadata.set(palletId, plateNumber)
 
-        // Update slot status based on whether plate number is empty.
-        // - Empty string => EMPTY
-        // - Non-empty string => OCCUPIED
-        this.palletStatus.set(
-            palletId,
-            plateNumber === '' ? SlotStatus.EMPTY : SlotStatus.OCCUPIED,
-        )
+        // Status is derived from plate number; only keep explicit task states.
+        this.palletStatus.set(palletId, null)
 
         return true
+    }
+
+    /**
+     * Retrieves the status for a pallet.
+     *
+     * @param palletId Pallet identifier.
+     * @returns Current slot status, or `null` when unknown.
+     */
+    getSlotStatus(palletId: number): SlotStatus | null {
+        return this.palletStatus.get(palletId) ?? null
+    }
+
+    /**
+     * Determines whether a pallet slot is empty or occupied based on its plate number.
+     *
+     * @param palletId Pallet identifier.
+     * @returns `'EMPTY'` when no plate is assigned, `'OCCUPIED'` when a plate is present,
+     *          or `'NO_PALLET'` for the placeholder empty slot.
+     */
+    getSlotOccupancy(palletId: number): 'NO_PALLET' | 'EMPTY' | 'OCCUPIED' {
+        if (palletId === ParkingSystem.EMPTY_SLOT_ID) {
+            return 'NO_PALLET'
+        }
+        const plateNumber = this.palletMetadata.get(palletId) ?? ''
+        return plateNumber === '' ? 'EMPTY' : 'OCCUPIED'
     }
 
     /**
@@ -324,6 +343,19 @@ export class ParkingSystem {
         }
 
         this.taskQueue.push({ type: 'SET_SLOT_DATA', palletId, plateNumber })
+
+        // Mark all pallets involved in the queued tasks as pending.
+        for (const task of this.taskQueue) {
+            if (task.type === 'MOVE_PALLET') {
+                const palletIdToMove = this.getSlotPalletId(task.fromCol, task.row)
+                if (palletIdToMove > 0) {
+                    this.palletStatus.set(palletIdToMove, SlotStatus.PENDING)
+                }
+            } else {
+                this.palletStatus.set(task.palletId, SlotStatus.PENDING)
+            }
+        }
+
         ParkingSystem.palletMetadataVersion++
         return true
     }
@@ -341,11 +373,32 @@ export class ParkingSystem {
         }
 
         let success = false
+        let processingPalletId: number | null = null
+
+        if (task.type === 'MOVE_PALLET') {
+            processingPalletId = this.getSlotPalletId(task.fromCol, task.row)
+        } else {
+            processingPalletId = task.palletId
+        }
+
+        if (processingPalletId && processingPalletId > 0) {
+            this.palletStatus.set(processingPalletId, SlotStatus.PROCESSING)
+        }
 
         if (task.type === 'MOVE_PALLET') {
             success = this.movePallet(task.row, task.fromCol, task.toCol)
+
+            if (success && processingPalletId && processingPalletId > 0) {
+                // After a successful move, slot occupancy is derived from plate metadata.
+                this.palletStatus.set(processingPalletId, null)
+            }
         } else {
             success = this.setSlotData(task.palletId, task.plateNumber)
+        }
+
+        if (!success && processingPalletId && processingPalletId > 0) {
+            // If execution failed, revert status back to pending so it can be retried.
+            this.palletStatus.set(processingPalletId, SlotStatus.PENDING)
         }
 
         onTaskExecuted?.({
@@ -397,11 +450,18 @@ export class ParkingSystem {
      *
      * @returns A two-dimensional array describing all slots.
      */
-    toSlotObjects2D(): Array<Array<{ slotPalletId: number; slotData: string | null }>> {
+    toSlotObjects2D(): Array<
+        Array<{
+            slotPalletId: number
+            slotData: string | null
+            slotStatus: SlotStatus | null
+        }>
+    > {
         return this.palletIdGrid.map((row) =>
             row.map((slotPalletId) => ({
                 slotPalletId,
                 slotData: this.getSlotData(slotPalletId),
+                slotStatus: this.getSlotStatus(slotPalletId),
             })),
         )
     }
