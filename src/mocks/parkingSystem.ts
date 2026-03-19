@@ -2,11 +2,6 @@ type ParkingTask =
     | { type: 'MOVE_PALLET'; row: number; fromCol: number; toCol: number }
     | { type: 'SET_SLOT_DATA'; palletId: number; plateNumber: string }
 
-type TaskExecutionResult = {
-    task: ParkingTask
-    success: boolean
-    remainingTasks: number
-}
 enum SlotStatus {
     NO_PALLET,
     PROCESSING,

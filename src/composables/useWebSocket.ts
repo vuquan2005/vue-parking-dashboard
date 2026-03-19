@@ -3,21 +3,10 @@ import { wsClient } from '@/services/websocket'
 import { useConfigStore } from '@/stores/config'
 import { useParkingStore } from '@/stores/parking'
 
-import type { ParkingEvent, ParkingSlot, WsMessage } from '@/type'
+import type { ParkingEvent, ParkingSlot, SlotStatus, WsMessage } from '@/type'
 
 const isConnected = ref(false)
 let isInitialized = false
-
-function isParkingSlotArray(data: unknown): data is ParkingSlot[] {
-    if (!Array.isArray(data)) return false
-    return data.every(
-        (s) =>
-            s &&
-            typeof s === 'object' &&
-            typeof (s as Record<string, unknown>).id === 'string' &&
-            typeof (s as Record<string, unknown>).status === 'string',
-    )
-}
 
 function isParkingEvent(data: unknown): data is ParkingEvent {
     if (!data || typeof data !== 'object') return false
@@ -30,6 +19,80 @@ function isParkingEvent(data: unknown): data is ParkingEvent {
         (d.status === 'Success' || d.status === 'Processing') &&
         typeof d.timestamp === 'number'
     )
+}
+
+function slotIdFromCoords(row: number, col: number) {
+    const rowLabel = String.fromCharCode(65 + row)
+    return `${rowLabel}${col + 1}`
+}
+
+function isRawSlotGrid(data: unknown): data is {
+    cols: number
+    rows: number
+    slots: Array<
+        Array<{
+            slotPalletId: number
+            slotData: string | null
+            slotStatus: SlotStatus | null
+        }>
+    >
+} {
+    if (!data || typeof data !== 'object') return false
+    const d = data as Record<string, unknown>
+    if (typeof d.cols !== 'number' || typeof d.rows !== 'number') return false
+    if (!Array.isArray(d.slots)) return false
+    if (d.slots.length !== d.rows) return false
+
+    return d.slots.every(
+        (row) =>
+            Array.isArray(row) &&
+            row.length === d.cols &&
+            row.every(
+                (slot) =>
+                    slot &&
+                    typeof slot === 'object' &&
+                    typeof (slot as Record<string, unknown>).slotPalletId === 'number',
+            ),
+    )
+}
+
+function convertRawSlotGridToParkingSlots(
+    rows: number,
+    cols: number,
+    slots: Array<
+        Array<{
+            slotPalletId: number
+            slotData: string | null
+            slotStatus: SlotStatus | null
+        }>
+    >,
+): ParkingSlot[] {
+    const result: ParkingSlot[] = []
+
+    for (let row = 0; row < rows; row++) {
+        const rowSlots = slots[row] || []
+        for (let col = 0; col < cols; col++) {
+            const raw = rowSlots[col]!
+            const occupancy: SlotStatus =
+                raw.slotPalletId === 0
+                    ? 'NO_PALLET'
+                    : raw.slotData && raw.slotData !== ''
+                      ? 'OCCUPIED'
+                      : 'EMPTY'
+
+            const status = (raw.slotStatus ?? occupancy) as SlotStatus
+            const plateNumber =
+                occupancy === 'NO_PALLET' || !raw.slotData ? undefined : raw.slotData
+
+            result.push({
+                id: slotIdFromCoords(row, col),
+                status,
+                plateNumber,
+            })
+        }
+    }
+
+    return result
 }
 
 export function useWebSocket() {
@@ -71,8 +134,11 @@ export function useWebSocket() {
                 break
 
             case 'parking_update':
-                if (isParkingSlotArray(message.data)) {
-                    parkingStore.updateAllSlot(message.data)
+                if (isRawSlotGrid(message.data)) {
+                    const { cols, rows, slots } = message.data
+                    parkingStore.updateAllSlot(
+                        convertRawSlotGridToParkingSlots(rows, cols, slots),
+                    )
                 }
                 break
 

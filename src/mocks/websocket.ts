@@ -4,7 +4,6 @@ import type {
     IWebSocketClient,
     WebSocketOptions,
     WsMessage,
-    ParkingSlot,
     ParkingEvent,
     BeaconNetwork,
     ESPWiFiStatus,
@@ -85,7 +84,6 @@ class MockWebSocketClient implements IWebSocketClient {
     > = []
     private parkingSystem = new ParkingSystem(4, 3)
     private nextEventId = 1
-    private slots: ParkingSlot[] = []
 
     constructor(options: WebSocketOptions = {}) {
         this.options = options
@@ -111,29 +109,10 @@ class MockWebSocketClient implements IWebSocketClient {
         return null
     }
 
-    private convertSystemToSlots(): ParkingSlot[] {
-        const slots: ParkingSlot[] = []
-
-        for (let row = 0; row < this.parkingSystem.totalRows; row++) {
-            for (let col = 0; col < this.parkingSystem.totalCols; col++) {
-                const palletId = this.parkingSystem.getSlotPalletId(col, row)
-                const occupancy = this.parkingSystem.getSlotOccupancy(palletId)
-                const status = (this.parkingSystem.getSlotStatus(palletId) ??
-                    occupancy) as SlotStatus
-
-                const rawPlate = this.parkingSystem.getSlotData(palletId) ?? ''
-                const plateNumber =
-                    occupancy === 'NO_PALLET' || rawPlate === '' ? undefined : rawPlate
-
-                slots.push({
-                    id: this.slotIdFromCoords(row, col),
-                    status,
-                    plateNumber,
-                })
-            }
-        }
-
-        return slots
+    private convertSystemToRawSlotGrid() {
+        // The grid is the source of truth for parking state. The UI is responsible
+        // for deriving a human-friendly slot label (A1/B2/etc) from its position.
+        return this.parkingSystem.toSlotObjects2D()
     }
 
     private createParkingEvent(params: {
@@ -155,8 +134,15 @@ class MockWebSocketClient implements IWebSocketClient {
     }
 
     private emitParkingUpdate() {
-        this.slots = this.convertSystemToSlots()
-        this.emit({ type: 'parking_update', data: this.slots })
+        const slotsGrid = this.convertSystemToRawSlotGrid()
+        this.emit({
+            type: 'parking_update',
+            data: {
+                cols: this.parkingSystem.totalCols,
+                rows: this.parkingSystem.totalRows,
+                slots: slotsGrid,
+            },
+        })
     }
 
     private emitParkingEvent(event: ParkingEvent) {
