@@ -37,5 +37,5 @@ export function formatUnixTimestamp(
     const min = String(utcDate.getUTCMinutes()).padStart(2, '0')
     const ss = String(utcDate.getUTCSeconds()).padStart(2, '0')
 
-    return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`
+    return `${hh}:${min}:${ss} ${dd}/${mm}/${yyyy}`
 }
