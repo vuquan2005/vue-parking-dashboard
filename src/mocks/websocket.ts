@@ -10,7 +10,9 @@ import type {
     ESPWiFiStatus,
     EventType,
     EventStatus,
+    SlotStatus,
 } from '@/type'
+import { ParkingSystem } from './parkingSystem'
 
 const log = createLogger('WebSocket')
 
@@ -39,112 +41,6 @@ function randomHex() {
     )
 
     return bytes.join(':')
-}
-
-function buildInitialSlots(): ParkingSlot[] {
-    const slots: ParkingSlot[] = []
-    const rows = ['A', 'B', 'C']
-    const cols = [1, 2, 3, 4]
-    const noPalletIds = new Set<string>([`B${randInt(1, 4)}`, `C${randInt(1, 4)}`])
-    for (const r of rows) {
-        for (const c of cols) {
-            const id = `${r}${c}`
-            const status = noPalletIds.has(id) ? 'NO_PALLET' : 'EMPTY'
-            slots.push({ id, status })
-        }
-    }
-    return slots
-}
-
-function mutateSlots(slots: ParkingSlot[]): {
-    slots: ParkingSlot[]
-    event?: ParkingEvent
-} {
-    if (slots.length === 0) return { slots }
-
-    const processingSlot = slots.find((s) => s.status === 'PROCESSING')
-    const slot = processingSlot ?? pick(slots)
-    const nextAction = Math.random()
-
-    const newSlots = slots.map((s) => ({ ...s }))
-    const idx = newSlots.findIndex((s) => s.id === slot.id)
-    if (idx < 0) return { slots: newSlots }
-    const cur = newSlots[idx]
-    if (!cur) return { slots: newSlots }
-    const hasProcessing = newSlots.some((s) => s.status === 'PROCESSING')
-
-    if (cur.status === 'NO_PALLET') {
-        const row = cur.id.slice(0, 1)
-        const col = Number(cur.id.slice(1))
-        if (Number.isNaN(col)) return { slots: newSlots }
-
-        const neighborIds = [`${row}${col - 1}`, `${row}${col + 1}`]
-        const neighbors = neighborIds
-            .map((id) => newSlots.find((s) => s.id === id))
-            .filter((s): s is ParkingSlot => s !== undefined)
-
-        if (neighbors.length === 0) return { slots: newSlots }
-
-        const target = pick(neighbors)
-        const curStatus = cur.status
-        const curPlate = cur.plateNumber
-
-        cur.status = target.status
-        cur.plateNumber = target.plateNumber
-        target.status = curStatus
-        target.plateNumber = curPlate
-
-        return { slots: newSlots }
-    }
-
-    const createEvent = (
-        type: EventType,
-        plateNumber: string,
-        status: EventStatus,
-    ): ParkingEvent => ({
-        id: Date.now(),
-        type,
-        plateNumber,
-        slotId: cur.id,
-        status,
-        timestamp: timeNow(),
-    })
-
-    if (cur.status === 'EMPTY') {
-        if (!hasProcessing && nextAction < 0.6) {
-            cur.status = 'PROCESSING'
-            cur.plateNumber = randomHex()
-            return { slots: newSlots, event: createEvent('IN', cur.plateNumber, 'Processing') }
-        }
-        return { slots: newSlots }
-    }
-
-    if (cur.status === 'PROCESSING') {
-        if (cur.plateNumber && nextAction < 0.5) {
-            cur.status = 'OCCUPIED'
-            return { slots: newSlots, event: createEvent('IN', cur.plateNumber, 'Success') }
-        }
-        if (cur.plateNumber && nextAction >= 0.5) {
-            cur.status = 'EMPTY'
-            const plate = cur.plateNumber
-            cur.plateNumber = undefined
-            return { slots: newSlots, event: createEvent('OUT', plate, 'Success') }
-        }
-        return { slots: newSlots }
-    }
-
-    if (cur.status === 'OCCUPIED') {
-        if (!hasProcessing && nextAction < 0.6) {
-            cur.status = 'PROCESSING'
-            return {
-                slots: newSlots,
-                event: createEvent('OUT', cur.plateNumber || randomHex(), 'Processing'),
-            }
-        }
-        return { slots: newSlots }
-    }
-
-    return { slots: newSlots }
 }
 
 function mockScanResults(): BeaconNetwork[] {
@@ -184,8 +80,12 @@ class MockWebSocketClient implements IWebSocketClient {
     public options: WebSocketOptions
     private connected = false
     private stopped = false
-    private timers: Array<ReturnType<typeof setInterval> | ReturnType<typeof setTimeout>> = []
-    private slots: ParkingSlot[] = buildInitialSlots()
+    private timers: Array<
+        ReturnType<typeof setInterval> | ReturnType<typeof setTimeout>
+    > = []
+    private parkingSystem = new ParkingSystem(4, 3)
+    private nextEventId = 1
+    private slots: ParkingSlot[] = []
 
     constructor(options: WebSocketOptions = {}) {
         this.options = options
@@ -193,6 +93,160 @@ class MockWebSocketClient implements IWebSocketClient {
 
     public get isConnected(): boolean {
         return this.connected
+    }
+
+    private slotIdFromCoords(row: number, col: number) {
+        const rowLabel = String.fromCharCode(65 + row)
+        return `${rowLabel}${col + 1}`
+    }
+
+    private slotIdFromPalletId(palletId: number): string | null {
+        for (let row = 0; row < this.parkingSystem.totalRows; row++) {
+            for (let col = 0; col < this.parkingSystem.totalCols; col++) {
+                if (this.parkingSystem.getSlotPalletId(col, row) === palletId) {
+                    return this.slotIdFromCoords(row, col)
+                }
+            }
+        }
+        return null
+    }
+
+    private convertSystemToSlots(): ParkingSlot[] {
+        const slots: ParkingSlot[] = []
+
+        for (let row = 0; row < this.parkingSystem.totalRows; row++) {
+            for (let col = 0; col < this.parkingSystem.totalCols; col++) {
+                const palletId = this.parkingSystem.getSlotPalletId(col, row)
+                const occupancy = this.parkingSystem.getSlotOccupancy(palletId)
+                const status = (this.parkingSystem.getSlotStatus(palletId) ??
+                    occupancy) as SlotStatus
+
+                const rawPlate = this.parkingSystem.getSlotData(palletId) ?? ''
+                const plateNumber =
+                    occupancy === 'NO_PALLET' || rawPlate === '' ? undefined : rawPlate
+
+                slots.push({
+                    id: this.slotIdFromCoords(row, col),
+                    status,
+                    plateNumber,
+                })
+            }
+        }
+
+        return slots
+    }
+
+    private createParkingEvent(params: {
+        type: EventType
+        plateNumber: string
+        slotId: string
+        status: EventStatus
+        process?: number
+    }): ParkingEvent {
+        return {
+            id: this.nextEventId++,
+            type: params.type,
+            plateNumber: params.plateNumber,
+            slotId: params.slotId,
+            status: params.status,
+            timestamp: timeNow(),
+            process: params.process,
+        }
+    }
+
+    private emitParkingUpdate() {
+        this.slots = this.convertSystemToSlots()
+        this.emit({ type: 'parking_update', data: this.slots })
+    }
+
+    private emitParkingEvent(event: ParkingEvent) {
+        this.emit({ type: 'parking_event', data: event })
+    }
+
+    private enqueueRandomTask(): ParkingEvent | null {
+        const candidates: number[] = []
+        for (let row = 0; row < this.parkingSystem.totalRows; row++) {
+            for (let col = 0; col < this.parkingSystem.totalCols; col++) {
+                const palletId = this.parkingSystem.getSlotPalletId(col, row)
+                if (palletId > 0 && this.parkingSystem.canSetSlotData(palletId)) {
+                    candidates.push(palletId)
+                }
+            }
+        }
+
+        if (candidates.length === 0) {
+            return null
+        }
+
+        const palletId = pick(candidates)
+        const currentPlate = this.parkingSystem.getSlotData(palletId) ?? ''
+        const isOccupied = currentPlate !== ''
+        const plateNumber = isOccupied ? '' : randomHex()
+        const type: EventType = isOccupied ? 'OUT' : 'IN'
+
+        const queued = this.parkingSystem.generateParkingQueue(palletId, plateNumber)
+        if (!queued) return null
+
+        const slotId = this.slotIdFromPalletId(palletId) ?? ''
+        const process = this.parkingSystem.getPendingTasks().length
+
+        return this.createParkingEvent({
+            type,
+            plateNumber: isOccupied ? currentPlate : plateNumber,
+            slotId,
+            status: 'Processing',
+            process,
+        })
+    }
+
+    private tickSimulation() {
+        if (this.stopped) return
+
+        const pendingTasks = this.parkingSystem.getPendingTasks().length
+
+        if (pendingTasks > 0) {
+            const success = this.parkingSystem.executeNextTask()
+            this.emitParkingUpdate()
+
+            const logs = this.parkingSystem.getLogs()
+            const lastLog = logs[logs.length - 1]
+            const task = lastLog?.details?.task as
+                | { type: string; palletId?: number; plateNumber?: string }
+                | undefined
+
+            if (
+                lastLog?.type === 'TASK_EXECUTED' &&
+                task?.type === 'SET_SLOT_DATA' &&
+                task.palletId != null
+            ) {
+                const slotId = this.slotIdFromPalletId(task.palletId) ?? ''
+                const plateNumber = lastLog.plateNumber ?? task.plateNumber ?? ''
+                const type: EventType = plateNumber ? 'IN' : 'OUT'
+                const status: EventStatus = success ? 'Success' : 'Processing'
+                const process =
+                    lastLog.process ?? this.parkingSystem.getPendingTasks().length
+
+                this.emitParkingEvent(
+                    this.createParkingEvent({
+                        type,
+                        plateNumber,
+                        slotId,
+                        status,
+                        process,
+                    }),
+                )
+            }
+
+            return
+        }
+
+        if (Math.random() < 0.6) {
+            const event = this.enqueueRandomTask()
+            if (event) {
+                this.emitParkingUpdate()
+                this.emitParkingEvent(event)
+            }
+        }
     }
 
     public connect() {
@@ -205,8 +259,11 @@ class MockWebSocketClient implements IWebSocketClient {
                 if (this.stopped) return
                 this.connected = true
                 this.options.onConnected?.()
-                this.emit({ type: 'wifi_status', data: buildWiFiStatus({ connected: true }) })
-                this.emit({ type: 'parking_update', data: this.slots })
+                this.emit({
+                    type: 'wifi_status',
+                    data: buildWiFiStatus({ connected: true }),
+                })
+                this.emitParkingUpdate()
             }, 1500),
         )
 
@@ -218,12 +275,7 @@ class MockWebSocketClient implements IWebSocketClient {
 
         this.timers.push(
             setInterval(() => {
-                const mutated = mutateSlots(this.slots)
-                this.slots = mutated.slots
-                if (mutated.event) {
-                    this.emit({ type: 'parking_event', data: mutated.event })
-                }
-                this.emit({ type: 'parking_update', data: this.slots })
+                this.tickSimulation()
             }, 2000),
         )
     }
@@ -263,7 +315,9 @@ class MockWebSocketClient implements IWebSocketClient {
         if (parsed.type === 'wifi_connect') {
             const requestedSsid =
                 parsed.data && typeof parsed.data === 'object'
-                    ? String((parsed.data as Record<string, unknown>).ssid || 'ETEK_PARKING')
+                    ? String(
+                          (parsed.data as Record<string, unknown>).ssid || 'ETEK_PARKING',
+                      )
                     : 'ETEK_PARKING'
             this.timers.push(
                 setTimeout(() => {

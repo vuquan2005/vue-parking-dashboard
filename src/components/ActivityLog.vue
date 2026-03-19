@@ -2,6 +2,7 @@
 import { useParkingStore } from '@/stores/parking'
 import { Clock, Car } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { formatUnixTimestamp } from '@/utils/time'
 
 const store = useParkingStore()
 const eventsNewestFirst = computed(() => [...store.events].reverse())
@@ -46,30 +47,22 @@ onBeforeUnmount(() => {
     clearTimeout(highlightTimer)
   }
 })
-
-function formatUnixToUtc7(unixTimestamp: number): string {
-  const timestampMs = unixTimestamp < 1_000_000_000_000 ? unixTimestamp * 1000 : unixTimestamp
-  const utc7Date = new Date(timestampMs + 7 * 60 * 60 * 1000)
-
-  const yyyy = utc7Date.getUTCFullYear()
-  const mm = String(utc7Date.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(utc7Date.getUTCDate()).padStart(2, '0')
-  const hh = String(utc7Date.getUTCHours()).padStart(2, '0')
-  const min = String(utc7Date.getUTCMinutes()).padStart(2, '0')
-  const ss = String(utc7Date.getUTCSeconds()).padStart(2, '0')
-
-  return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`
-}
 </script>
 
 <template>
   <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col">
-    <h2 class="mb-5 shrink-0 flex items-center gap-2 text-base font-semibold text-gray-700">
+    <h2
+      class="mb-5 shrink-0 flex items-center gap-2 text-base font-semibold text-gray-700"
+    >
       <Clock class="w-5 h-5 text-gray-500" />
       Lịch sử ra vào
     </h2>
 
-    <TransitionGroup name="log-list" tag="div" class="flex flex-col gap-3 overflow-y-auto pr-2 min-h-0 flex-1">
+    <TransitionGroup
+      name="log-list"
+      tag="div"
+      class="flex flex-col gap-3 overflow-y-auto pr-2 min-h-0 flex-1"
+    >
       <div
         v-for="event in eventsNewestFirst"
         :key="event.id"
@@ -83,12 +76,16 @@ function formatUnixToUtc7(unixTimestamp: number): string {
           <span
             :class="[
               'rounded-md px-2.5 py-1 text-xs font-bold tracking-wide uppercase',
-              event.type === 'IN' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700',
+              event.type === 'IN'
+                ? 'bg-red-100 text-red-700'
+                : 'bg-emerald-100 text-emerald-700',
             ]"
           >
             {{ event.type === 'IN' ? 'Xe vào' : 'Xe ra' }}
           </span>
-          <span class="text-xs text-gray-600">{{ formatUnixToUtc7(event.timestamp) }}</span>
+          <span class="text-xs text-gray-600">{{
+            formatUnixTimestamp(event.timestamp)
+          }}</span>
         </div>
 
         <!-- Details -->
