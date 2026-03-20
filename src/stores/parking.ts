@@ -13,7 +13,7 @@ export const useParkingStore = defineStore('parking', () => {
     }
 
     function addEvent(event: ParkingEvent) {
-        const existingIndex = events.value.findIndex((e) => e.id === event.id)
+        const existingIndex = events.value.findIndex((e) => e.eventId === event.eventId)
         if (existingIndex >= 0) {
             events.value.splice(existingIndex, 1, event)
         } else {
@@ -33,9 +33,15 @@ export const useParkingStore = defineStore('parking', () => {
     const events = ref<ParkingEvent[]>([])
 
     const totalSlots = computed(() => slots.value.length)
-    const noPalletCount = computed(() => slots.value.filter((s) => s.status === 'NO_PALLET').length)
-    const emptyCount = computed(() => slots.value.filter((s) => s.status === 'EMPTY').length)
-    const occupiedCount = computed(() => slots.value.filter((s) => s.status === 'OCCUPIED').length)
+    const noPalletCount = computed(
+        () => slots.value.filter((s) => s.status === 'NO_PALLET').length,
+    )
+    const emptyCount = computed(
+        () => slots.value.filter((s) => s.status === 'EMPTY').length,
+    )
+    const occupiedCount = computed(
+        () => slots.value.filter((s) => s.status === 'OCCUPIED').length,
+    )
     const processingCount = computed(
         () => slots.value.filter((s) => s.status === 'PROCESSING').length,
     )

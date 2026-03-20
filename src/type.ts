@@ -1,20 +1,20 @@
 export type SlotStatus = 'NO_PALLET' | 'EMPTY' | 'OCCUPIED' | 'PROCESSING' | 'PENDING'
 
 export interface ParkingSlot {
-    id: string
+    slotLabel: string
     status: SlotStatus
-    plateNumber?: string
+    rfid?: string
 }
 
 export type EventType = 'IN' | 'OUT'
 export type EventStatus = 'Success' | 'Processing'
 
 export interface ParkingEvent {
-    id: number
+    eventId: number
     type: EventType
-    plateNumber: string
-    slotId: string
+    rfid: string
+    slotLabel: string
     status: EventStatus
-    process?: number
     timestamp: number
+    process?: number
 }

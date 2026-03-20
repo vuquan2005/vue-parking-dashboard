@@ -13,62 +13,62 @@ export function initMockStore() {
     const pA1 = randomHexString(4)
 
     const mockSlots: ParkingSlot[] = [
-        { id: 'A1', status: 'EMPTY' },
-        { id: 'A2', status: 'EMPTY' },
-        { id: 'A3', status: 'OCCUPIED', plateNumber: pA3 },
-        { id: 'A4', status: 'EMPTY' },
+        { slotLabel: 'A1', status: 'EMPTY' },
+        { slotLabel: 'A2', status: 'EMPTY' },
+        { slotLabel: 'A3', status: 'OCCUPIED', rfid: pA3 },
+        { slotLabel: 'A4', status: 'EMPTY' },
 
-        { id: 'B1', status: 'OCCUPIED', plateNumber: pB1 },
-        { id: 'B2', status: 'PROCESSING', plateNumber: pB2 },
-        { id: 'B3', status: 'NO_PALLET' },
-        { id: 'B4', status: 'EMPTY' },
+        { slotLabel: 'B1', status: 'OCCUPIED', rfid: pB1 },
+        { slotLabel: 'B2', status: 'PROCESSING', rfid: pB2 },
+        { slotLabel: 'B3', status: 'NO_PALLET' },
+        { slotLabel: 'B4', status: 'EMPTY' },
 
-        { id: 'C1', status: 'PENDING', plateNumber: pC1 },
-        { id: 'C2', status: 'EMPTY' },
-        { id: 'C3', status: 'OCCUPIED', plateNumber: pC3 },
-        { id: 'C4', status: 'NO_PALLET' },
+        { slotLabel: 'C1', status: 'PENDING', rfid: pC1 },
+        { slotLabel: 'C2', status: 'EMPTY' },
+        { slotLabel: 'C3', status: 'OCCUPIED', rfid: pC3 },
+        { slotLabel: 'C4', status: 'NO_PALLET' },
     ]
 
     const mockEvents: ParkingEvent[] = [
         {
-            id: 1,
+            eventId: 1,
             type: 'IN',
-            plateNumber: pA3,
-            slotId: 'A3',
+            rfid: pA3,
+            slotLabel: 'A3',
             status: 'Success',
             timestamp: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
         },
         {
-            id: 2,
+            eventId: 2,
             type: 'IN',
-            plateNumber: pB1,
-            slotId: 'B1',
+            rfid: pB1,
+            slotLabel: 'B1',
             status: 'Success',
             timestamp: Date.now() - 1000 * 60 * 45, // 45 minutes ago
         },
         {
-            id: 3,
+            eventId: 3,
             type: 'OUT',
-            plateNumber: pB2,
-            slotId: 'B2',
+            rfid: pB2,
+            slotLabel: 'B2',
             status: 'Processing',
             process: 45, // 45% complete
             timestamp: Date.now() - 1000 * 60 * 2, // 2 minutes ago
         },
         {
-            id: 4,
+            eventId: 4,
             type: 'IN',
-            plateNumber: pC1,
-            slotId: 'C1',
+            rfid: pC1,
+            slotLabel: 'C1',
             status: 'Processing',
             process: 10, // 10% complete
             timestamp: Date.now() - 1000 * 30, // 30 seconds ago
         },
         {
-            id: 5,
+            eventId: 5,
             type: 'OUT',
-            plateNumber: pA1,
-            slotId: 'A1',
+            rfid: pA1,
+            slotLabel: 'A1',
             status: 'Success',
             timestamp: Date.now() - 1000 * 60 * 60 * 5, // 5 hours ago
         },
@@ -96,23 +96,23 @@ export function initMockStore() {
 
                 // Update slot status accordingly
                 const slotIndex = currentSlots.findIndex(
-                    (s) => s.id === updatedEvent.slotId,
+                    (s) => s.slotLabel === updatedEvent.slotLabel,
                 )
                 if (slotIndex !== -1) {
                     const slot = currentSlots[slotIndex]!
                     if (updatedEvent.type === 'IN') {
                         slot.status = 'OCCUPIED'
-                        slot.plateNumber = updatedEvent.plateNumber
+                        slot.rfid = updatedEvent.rfid
                     } else if (updatedEvent.type === 'OUT') {
                         slot.status = 'EMPTY'
-                        delete slot.plateNumber
+                        delete slot.rfid
                     }
                     isSlotChanged = true
                 }
             } else {
                 // Not finished yet, ensure the slot is visually in PROCESSING status
                 const slotIndex = currentSlots.findIndex(
-                    (s) => s.id === updatedEvent.slotId,
+                    (s) => s.slotLabel === updatedEvent.slotLabel,
                 )
                 if (slotIndex !== -1) {
                     const slot = currentSlots[slotIndex]!
@@ -145,12 +145,12 @@ export function initMockStore() {
                 (s) =>
                     s.status === 'OCCUPIED' &&
                     !currentEvents.find(
-                        (e) => e.slotId === s.id && e.status === 'Processing',
+                        (e) => e.slotLabel === s.slotLabel && e.status === 'Processing',
                     ),
             )
 
             const newEvent: Partial<ParkingEvent> = {
-                id: Date.now(),
+                eventId: Date.now(),
                 timestamp: Date.now(),
                 status: 'Processing',
                 process: 0,
@@ -161,12 +161,12 @@ export function initMockStore() {
                 // IN event
                 const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!
                 newEvent.type = 'IN'
-                newEvent.slotId = slot.id
-                newEvent.plateNumber = randomHexString(4)
+                newEvent.slotLabel = slot.slotLabel
+                newEvent.rfid = randomHexString(4)
 
                 parkingStore.addEvent(newEvent as ParkingEvent)
 
-                const s = currentSlots.find((s) => s.id === slot.id)!
+                const s = currentSlots.find((s) => s.slotLabel === slot.slotLabel)!
                 s.status = 'PROCESSING'
                 isSlotChanged = true
             } else if (occupiedSlots.length > 0) {
@@ -174,12 +174,12 @@ export function initMockStore() {
                 const slot =
                     occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)]!
                 newEvent.type = 'OUT'
-                newEvent.slotId = slot.id
-                newEvent.plateNumber = slot.plateNumber!
+                newEvent.slotLabel = slot.slotLabel
+                newEvent.rfid = slot.rfid!
 
                 parkingStore.addEvent(newEvent as ParkingEvent)
 
-                const s = currentSlots.find((s) => s.id === slot.id)!
+                const s = currentSlots.find((s) => s.slotLabel === slot.slotLabel)!
                 s.status = 'PROCESSING'
                 isSlotChanged = true
             }

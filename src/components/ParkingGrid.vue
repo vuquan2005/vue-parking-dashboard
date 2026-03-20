@@ -65,23 +65,19 @@ function statusBadgeClass(status: string) {
       Sơ đồ bãi đỗ
     </h2>
     <div class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 min-h-0 flex-1">
-      <div
-        v-for="slot in store.slots"
-        :key="slot.id"
-        :class="[slotClasses(slot.status), filterClasses(slot.status)]"
-      >
+      <div v-for="slot in store.slots" :key="slot.slotLabel"
+        :class="[slotClasses(slot.status), filterClasses(slot.status)]">
         <!-- ID label -->
-        <span class="text-lg font-bold leading-none">{{ slot.id }}</span>
+        <span class="text-lg font-bold leading-none">{{ slot.slotLabel }}</span>
 
         <div class="flex flex-col items-center justify-center w-full mt-1.5 h-6">
           <span
             class="rounded px-2 py-0.5 font-bold tracking-wider uppercase ring-1 flex items-center justify-center text-center max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
             :class="[
               statusBadgeClass(slot.status),
-              slot.plateNumber ? 'text-xs rounded' : 'text-[10px] rounded-full',
-            ]"
-          >
-            {{ slot.plateNumber || statusLabel(slot.status) }}
+              slot.rfid ? 'text-xs rounded' : 'text-[10px] rounded-full',
+            ]">
+            {{ slot.rfid || statusLabel(slot.status) }}
           </span>
         </div>
       </div>
@@ -95,10 +91,12 @@ function statusBadgeClass(status: string) {
 }
 
 @keyframes processing-opacity {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.75;
   }
