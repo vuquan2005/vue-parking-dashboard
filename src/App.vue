@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
-import { useWebSocket } from '@/composables/useWebSocket'
-
-const { initWebSocket } = useWebSocket()
+import { initMockStore } from '@/mocks/mockstore'
 
 onMounted(() => {
-  initWebSocket()
+  initMockStore()
 })
 </script>
 
