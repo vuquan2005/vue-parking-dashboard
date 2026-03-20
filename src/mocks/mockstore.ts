@@ -8,20 +8,19 @@ export function initMockStore() {
     const pA3 = randomHexString(4)
     const pB1 = randomHexString(4)
     const pB2 = randomHexString(4)
-    const pB3 = randomHexString(4)
     const pC1 = randomHexString(4)
     const pC3 = randomHexString(4)
     const pA1 = randomHexString(4)
 
     const mockSlots: ParkingSlot[] = [
         { id: 'A1', status: 'EMPTY' },
-        { id: 'A2', status: 'NO_PALLET' },
+        { id: 'A2', status: 'EMPTY' },
         { id: 'A3', status: 'OCCUPIED', plateNumber: pA3 },
         { id: 'A4', status: 'EMPTY' },
 
         { id: 'B1', status: 'OCCUPIED', plateNumber: pB1 },
         { id: 'B2', status: 'PROCESSING', plateNumber: pB2 },
-        { id: 'B3', status: 'OCCUPIED', plateNumber: pB3 },
+        { id: 'B3', status: 'NO_PALLET' },
         { id: 'B4', status: 'EMPTY' },
 
         { id: 'C1', status: 'PENDING', plateNumber: pC1 },
@@ -83,46 +82,55 @@ export function initMockStore() {
     setInterval(() => {
         let isSlotChanged = false
         const currentSlots = [...parkingStore.slots]
-
-        // Progress events over time
+        // Progress ONLY 1 active event over time to enforce 1 processing slot limit
         const currentEvents = [...parkingStore.events]
-        currentEvents.forEach((event) => {
-            if (event.status === 'Processing') {
-                const updatedEvent = { ...event }
-                updatedEvent.process =
-                    (updatedEvent.process || 0) + Math.floor(Math.random() * 15) + 5
+        const processingEvent = currentEvents.find((e) => e.status === 'Processing')
+        if (processingEvent) {
+            const updatedEvent = { ...processingEvent }
+            updatedEvent.process =
+                (updatedEvent.process || 0) + Math.floor(Math.random() * 15) + 5
 
-                if (updatedEvent.process >= 100) {
-                    updatedEvent.process = 100
-                    updatedEvent.status = 'Success'
+            if (updatedEvent.process >= 100) {
+                updatedEvent.process = 100
+                updatedEvent.status = 'Success'
 
-                    // Update slot status accordingly
-                    const slotIndex = currentSlots.findIndex(
-                        (s) => s.id === updatedEvent.slotId,
-                    )
-                    if (slotIndex !== -1) {
-                        const slot = currentSlots[slotIndex]!
-                        if (updatedEvent.type === 'IN') {
-                            slot.status = 'OCCUPIED'
-                            slot.plateNumber = updatedEvent.plateNumber
-                        } else if (updatedEvent.type === 'OUT') {
-                            slot.status = 'EMPTY'
-                            delete slot.plateNumber
-                        }
+                // Update slot status accordingly
+                const slotIndex = currentSlots.findIndex(
+                    (s) => s.id === updatedEvent.slotId,
+                )
+                if (slotIndex !== -1) {
+                    const slot = currentSlots[slotIndex]!
+                    if (updatedEvent.type === 'IN') {
+                        slot.status = 'OCCUPIED'
+                        slot.plateNumber = updatedEvent.plateNumber
+                    } else if (updatedEvent.type === 'OUT') {
+                        slot.status = 'EMPTY'
+                        delete slot.plateNumber
+                    }
+                    isSlotChanged = true
+                }
+            } else {
+                // Not finished yet, ensure the slot is visually in PROCESSING status
+                const slotIndex = currentSlots.findIndex(
+                    (s) => s.id === updatedEvent.slotId,
+                )
+                if (slotIndex !== -1) {
+                    const slot = currentSlots[slotIndex]!
+                    if (slot.status === 'PENDING') {
+                        slot.status = 'PROCESSING'
                         isSlotChanged = true
                     }
                 }
-                parkingStore.addEvent(updatedEvent)
             }
-        })
-
-        // Also process PENDING slots that don't have events mapped (like C1)
-        currentSlots.forEach((slot) => {
-            if (slot.status === 'PENDING') {
-                slot.status = 'PROCESSING'
+            parkingStore.addEvent(updatedEvent)
+        } else {
+            // Also process PENDING slots that don't have events mapped just in case
+            const pendingSlot = currentSlots.find((s) => s.status === 'PENDING')
+            if (pendingSlot) {
+                pendingSlot.status = 'PROCESSING'
                 isSlotChanged = true
             }
-        })
+        }
 
         // Check if any slot/event is already processing to only allow 1 slot processing at a time
         const isAnyProcessing =
@@ -180,5 +188,5 @@ export function initMockStore() {
         if (isSlotChanged) {
             parkingStore.updateAllSlot(currentSlots)
         }
-    }, 2000)
+    }, 1000)
 }
