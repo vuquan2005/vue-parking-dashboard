@@ -88,7 +88,7 @@ export function initMockStore() {
         if (processingEvent) {
             const updatedEvent = { ...processingEvent }
             updatedEvent.process =
-                (updatedEvent.process || 0) + Math.floor(Math.random() * 15) + 5
+                (updatedEvent.process || 0) + Math.floor(Math.random() * 15) + 25
 
             if (updatedEvent.process >= 100) {
                 updatedEvent.process = 100
@@ -188,5 +188,5 @@ export function initMockStore() {
         if (isSlotChanged) {
             parkingStore.updateAllSlot(currentSlots)
         }
-    }, 1000)
+    }, 2000)
 }
