@@ -1,0 +1,126 @@
+/**
+ * Protobuf → UI type mapping utilities.
+ *
+ * Converts raw protobuf messages from parking.ts into the UI types
+ * defined in @/type.ts for use in the Pinia store.
+ */
+
+import type {
+    SlotStatus as ProtoSlotStatus,
+    ParkingEvent as ProtoParkingEvent,
+    ParkingStatus as ProtoParkingStatus,
+} from '@/services/parking'
+import {
+    SlotStatus_Status,
+    ParkingEvent_EventType,
+    slotStatus_StatusToJSON,
+    parkingEvent_EventTypeToJSON,
+} from '@/services/parking'
+
+import type {
+    ParkingSlot,
+    ParkingEvent,
+    SlotStatus,
+    EventType,
+    EventStatus,
+} from '@/type'
+
+// ---------------------------------------------------------------------------
+// Slot ID ↔ Label mapping
+// ---------------------------------------------------------------------------
+
+const COLUMNS = 4 // A1..A4, B1..B4, etc.
+
+/**
+ * Convert a numeric slot_id (1-based) into a label like "A1", "B3", etc.
+ *
+ * Row = letter (A, B, C, …), Column = number within row (1-based).
+ * slot_id 1 → A1, slot_id 5 → B1, slot_id 12 → C4
+ */
+export function slotIdToLabel(slotId: number): string {
+    const rowIndex = Math.floor((slotId - 1) / COLUMNS)
+    const colIndex = ((slotId - 1) % COLUMNS) + 1
+    const rowLetter = String.fromCharCode(65 + rowIndex) // A=65
+    return `${rowLetter}${colIndex}`
+}
+
+// ---------------------------------------------------------------------------
+// RFID byte array → hex string
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert a Uint8Array of RFID bytes into a colon-delimited hex string.
+ *
+ * Example: Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]) → "DE:AD:BE:EF"
+ */
+export function rfidToHex(bytes: Uint8Array): string {
+    if (bytes.length === 0) return ''
+    return Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0').toUpperCase())
+        .join(':')
+}
+
+// ---------------------------------------------------------------------------
+// Protobuf SlotStatus → UI ParkingSlot
+// ---------------------------------------------------------------------------
+
+function mapProtoStatusToUI(status: SlotStatus_Status): SlotStatus {
+    const key = slotStatus_StatusToJSON(status)
+    // slotStatus_StatusToJSON returns 'UNKNOWN', 'NO_PALLET', 'EMPTY', etc.
+    // Our UI SlotStatus type is exactly these string values (minus UNKNOWN)
+    if (key === 'UNKNOWN' || key === 'UNRECOGNIZED') return 'EMPTY'
+    return key as SlotStatus
+}
+
+export function mapSlotStatus(slot: ProtoSlotStatus): ParkingSlot {
+    const firstRfid = slot.rfid.length > 0 ? slot.rfid[0] : undefined
+
+    return {
+        slotLabel: slotIdToLabel(slot.slotId),
+        status: mapProtoStatusToUI(slot.status),
+        rfid: firstRfid ? rfidToHex(firstRfid) : undefined,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Protobuf ParkingStatus → UI ParkingSlot[]
+// ---------------------------------------------------------------------------
+
+export function mapParkingStatus(status: ProtoParkingStatus): ParkingSlot[] {
+    return status.slots.map(mapSlotStatus)
+}
+
+// ---------------------------------------------------------------------------
+// Protobuf ParkingEvent → UI ParkingEvent
+// ---------------------------------------------------------------------------
+
+function mapEventType(eventType: ParkingEvent_EventType): EventType {
+    const key = parkingEvent_EventTypeToJSON(eventType)
+    if (key === 'IN' || key === 'OUT') return key
+    return 'IN' // fallback
+}
+
+function deriveEventStatus(event: ProtoParkingEvent): EventStatus {
+    // If step === totalSteps (and both > 0), the event is complete
+    if (event.totalSteps > 0 && event.step >= event.totalSteps) {
+        return 'Success'
+    }
+    return 'Processing'
+}
+
+function deriveProcess(event: ProtoParkingEvent): number | undefined {
+    if (event.totalSteps === 0) return undefined
+    return Math.round((event.step / event.totalSteps) * 100)
+}
+
+export function mapParkingEvent(event: ProtoParkingEvent): ParkingEvent {
+    return {
+        eventId: event.eventId,
+        type: mapEventType(event.eventType),
+        rfid: rfidToHex(event.rfid),
+        slotLabel: slotIdToLabel(event.slotId),
+        status: deriveEventStatus(event),
+        timestamp: Number(event.timestamp),
+        process: deriveProcess(event),
+    }
+}

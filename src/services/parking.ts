@@ -20,7 +20,7 @@ export interface Parking {
 export interface WifiScanning {}
 
 export interface ScanResults {
-    /** max_count: 10 */
+    /** max_count: 10 (nanopb) */
     accessPoints: ScanResults_AP[]
 }
 
@@ -31,7 +31,7 @@ export enum ScanResults_WifiAuthMode {
     WIFI_AUTH_WPA2_PSK = 3,
     WIFI_AUTH_WPA_WPA2_PSK = 4,
     WIFI_AUTH_ENTERPRISE = 5,
-    WIFI_AUTH_WPA2_ENTERPRISE = 5,
+    /** WIFI_AUTH_WPA3_PSK - WIFI_AUTH_WPA2_ENTERPRISE         = 5; */
     WIFI_AUTH_WPA3_PSK = 6,
     WIFI_AUTH_WPA2_WPA3_PSK = 7,
     WIFI_AUTH_WAPI_PSK = 8,
@@ -66,9 +66,6 @@ export function scanResults_WifiAuthModeFromJSON(object: any): ScanResults_WifiA
         case 5:
         case 'WIFI_AUTH_ENTERPRISE':
             return ScanResults_WifiAuthMode.WIFI_AUTH_ENTERPRISE
-        case 5:
-        case 'WIFI_AUTH_WPA2_ENTERPRISE':
-            return ScanResults_WifiAuthMode.WIFI_AUTH_WPA2_ENTERPRISE
         case 6:
         case 'WIFI_AUTH_WPA3_PSK':
             return ScanResults_WifiAuthMode.WIFI_AUTH_WPA3_PSK
@@ -123,8 +120,6 @@ export function scanResults_WifiAuthModeToJSON(object: ScanResults_WifiAuthMode)
             return 'WIFI_AUTH_WPA_WPA2_PSK'
         case ScanResults_WifiAuthMode.WIFI_AUTH_ENTERPRISE:
             return 'WIFI_AUTH_ENTERPRISE'
-        case ScanResults_WifiAuthMode.WIFI_AUTH_WPA2_ENTERPRISE:
-            return 'WIFI_AUTH_WPA2_ENTERPRISE'
         case ScanResults_WifiAuthMode.WIFI_AUTH_WPA3_PSK:
             return 'WIFI_AUTH_WPA3_PSK'
         case ScanResults_WifiAuthMode.WIFI_AUTH_WPA2_WPA3_PSK:
@@ -154,9 +149,9 @@ export function scanResults_WifiAuthModeToJSON(object: ScanResults_WifiAuthMode)
 }
 
 export interface ScanResults_AP {
-    /** max_size: 32 */
+    /** max_size: 32 (nanopb) */
     ssid: string
-    /** 6 bytes MAC address */
+    /** 6 bytes MAC address (nanopb) */
     bssid: Uint8Array
     rssi: number
     channel: number
@@ -166,9 +161,9 @@ export interface ScanResults_AP {
 export interface DeviceStatus {
     connected: boolean
     wifiMode: DeviceStatus_WifiMode
-    /** max_size: 32 */
+    /** max_size: 32 (nanopb) */
     ssid: string
-    /** max_size: 16 */
+    /** max_size: 16 (nanopb) */
     ipAddress: string
     rssi: number
     channel: number
@@ -230,14 +225,14 @@ export function deviceStatus_WifiModeToJSON(object: DeviceStatus_WifiMode): stri
 }
 
 export interface ParkingStatus {
-    /** max_count: 15 */
+    /** max_count: 15 (nanopb) */
     slots: SlotStatus[]
 }
 
 export interface SlotStatus {
     slotId: number
     status: SlotStatus_Status
-    /** raw RFID tag bytes (10 bytes each), max_count: 15 */
+    /** raw RFID tag bytes (10 bytes each), max_count: 15 (nanopb) */
     rfid: Uint8Array[]
 }
 

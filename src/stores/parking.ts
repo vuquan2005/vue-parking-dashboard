@@ -2,11 +2,17 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { SlotStatus, ParkingSlot, ParkingEvent } from '@/type'
+import type { ConnectionStatus } from '@/services/websocket'
 
 export type FilterType = SlotStatus | null
 
 export const useParkingStore = defineStore('parking', () => {
     const selectedFilter = ref<FilterType>(null)
+    const wsStatus = ref<ConnectionStatus>('disconnected')
+
+    function updateWsStatus(newStatus: ConnectionStatus) {
+        wsStatus.value = newStatus
+    }
 
     function toggleFilter(filter: FilterType) {
         selectedFilter.value = selectedFilter.value === filter ? null : filter
@@ -51,6 +57,8 @@ export const useParkingStore = defineStore('parking', () => {
         toggleFilter,
         addEvent,
         updateAllSlot,
+        updateWsStatus,
+        wsStatus,
         slots,
         events,
         totalSlots,
