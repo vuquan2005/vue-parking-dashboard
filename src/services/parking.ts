@@ -2,7 +2,7 @@
 // versions:
 //   protoc-gen-ts_proto  v2.11.5
 //   protoc               v3.21.12
-// source: src/services/parking.proto
+// source: parking.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from '@bufbuild/protobuf/wire'
@@ -15,6 +15,7 @@ export interface Parking {
     wifiStatus?: DeviceStatus | undefined
     parkingStatus?: ParkingStatus | undefined
     parkingEvent?: ParkingEvent | undefined
+    wifiConfig?: WifiConfig | undefined
 }
 
 export interface WifiScanning {}
@@ -162,9 +163,15 @@ export interface DeviceStatus {
     connected: boolean
     wifiMode: DeviceStatus_WifiMode
     /** max_size: 32 (nanopb) */
-    ssid: string
+    staSsid: string
     /** max_size: 16 (nanopb) */
-    ipAddress: string
+    staIp: string
+    /** max_size: 32 (nanopb) */
+    apSsid: string
+    /** max_size: 16 (nanopb) */
+    apIp: string
+    /** max_size: 64 (nanopb) */
+    apPassword: string
     rssi: number
     channel: number
     freeHeap: number
@@ -222,6 +229,18 @@ export function deviceStatus_WifiModeToJSON(object: DeviceStatus_WifiMode): stri
         default:
             return 'UNRECOGNIZED'
     }
+}
+
+export interface WifiConfig {
+    /** max_size: 32 (nanopb) */
+    staSsid: string
+    /** max_size: 64 (nanopb) */
+    staPassword: string
+    /** max_size: 32 (nanopb) */
+    apSsid: string
+    /** max_size: 64 (nanopb) */
+    apPassword: string
+    channel: number
 }
 
 export interface ParkingStatus {
@@ -414,6 +433,7 @@ function createBaseParking(): Parking {
         wifiStatus: undefined,
         parkingStatus: undefined,
         parkingEvent: undefined,
+        wifiConfig: undefined,
     }
 }
 
@@ -433,6 +453,9 @@ export const Parking: MessageFns<Parking> = {
         }
         if (message.parkingEvent !== undefined) {
             ParkingEvent.encode(message.parkingEvent, writer.uint32(42).fork()).join()
+        }
+        if (message.wifiConfig !== undefined) {
+            WifiConfig.encode(message.wifiConfig, writer.uint32(50).fork()).join()
         }
         return writer
     },
@@ -484,6 +507,14 @@ export const Parking: MessageFns<Parking> = {
                     message.parkingEvent = ParkingEvent.decode(reader, reader.uint32())
                     continue
                 }
+                case 6: {
+                    if (tag !== 50) {
+                        break
+                    }
+
+                    message.wifiConfig = WifiConfig.decode(reader, reader.uint32())
+                    continue
+                }
             }
             if ((tag & 7) === 4 || tag === 0) {
                 break
@@ -520,6 +551,11 @@ export const Parking: MessageFns<Parking> = {
                 : isSet(object.parking_event)
                   ? ParkingEvent.fromJSON(object.parking_event)
                   : undefined,
+            wifiConfig: isSet(object.wifiConfig)
+                ? WifiConfig.fromJSON(object.wifiConfig)
+                : isSet(object.wifi_config)
+                  ? WifiConfig.fromJSON(object.wifi_config)
+                  : undefined,
         }
     },
 
@@ -539,6 +575,9 @@ export const Parking: MessageFns<Parking> = {
         }
         if (message.parkingEvent !== undefined) {
             obj.parkingEvent = ParkingEvent.toJSON(message.parkingEvent)
+        }
+        if (message.wifiConfig !== undefined) {
+            obj.wifiConfig = WifiConfig.toJSON(message.wifiConfig)
         }
         return obj
     },
@@ -567,6 +606,10 @@ export const Parking: MessageFns<Parking> = {
         message.parkingEvent =
             object.parkingEvent !== undefined && object.parkingEvent !== null
                 ? ParkingEvent.fromPartial(object.parkingEvent)
+                : undefined
+        message.wifiConfig =
+            object.wifiConfig !== undefined && object.wifiConfig !== null
+                ? WifiConfig.fromPartial(object.wifiConfig)
                 : undefined
         return message
     },
@@ -822,8 +865,11 @@ function createBaseDeviceStatus(): DeviceStatus {
     return {
         connected: false,
         wifiMode: 0,
-        ssid: '',
-        ipAddress: '',
+        staSsid: '',
+        staIp: '',
+        apSsid: '',
+        apIp: '',
+        apPassword: '',
         rssi: 0,
         channel: 0,
         freeHeap: 0,
@@ -844,29 +890,38 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
         if (message.wifiMode !== 0) {
             writer.uint32(16).int32(message.wifiMode)
         }
-        if (message.ssid !== '') {
-            writer.uint32(26).string(message.ssid)
+        if (message.staSsid !== '') {
+            writer.uint32(26).string(message.staSsid)
         }
-        if (message.ipAddress !== '') {
-            writer.uint32(34).string(message.ipAddress)
+        if (message.staIp !== '') {
+            writer.uint32(34).string(message.staIp)
+        }
+        if (message.apSsid !== '') {
+            writer.uint32(42).string(message.apSsid)
+        }
+        if (message.apIp !== '') {
+            writer.uint32(50).string(message.apIp)
+        }
+        if (message.apPassword !== '') {
+            writer.uint32(58).string(message.apPassword)
         }
         if (message.rssi !== 0) {
-            writer.uint32(40).int32(message.rssi)
+            writer.uint32(64).int32(message.rssi)
         }
         if (message.channel !== 0) {
-            writer.uint32(48).uint32(message.channel)
+            writer.uint32(72).uint32(message.channel)
         }
         if (message.freeHeap !== 0) {
-            writer.uint32(56).uint32(message.freeHeap)
+            writer.uint32(80).uint32(message.freeHeap)
         }
         if (message.minFreeHeap !== 0) {
-            writer.uint32(64).uint32(message.minFreeHeap)
+            writer.uint32(88).uint32(message.minFreeHeap)
         }
         if (message.maxFreeBlockSize !== 0) {
-            writer.uint32(72).uint32(message.maxFreeBlockSize)
+            writer.uint32(96).uint32(message.maxFreeBlockSize)
         }
         if (message.uptimeSeconds !== 0) {
-            writer.uint32(80).uint32(message.uptimeSeconds)
+            writer.uint32(104).uint32(message.uptimeSeconds)
         }
         return writer
     },
@@ -899,7 +954,7 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
                         break
                     }
 
-                    message.ssid = reader.string()
+                    message.staSsid = reader.string()
                     continue
                 }
                 case 4: {
@@ -907,31 +962,31 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
                         break
                     }
 
-                    message.ipAddress = reader.string()
+                    message.staIp = reader.string()
                     continue
                 }
                 case 5: {
-                    if (tag !== 40) {
+                    if (tag !== 42) {
                         break
                     }
 
-                    message.rssi = reader.int32()
+                    message.apSsid = reader.string()
                     continue
                 }
                 case 6: {
-                    if (tag !== 48) {
+                    if (tag !== 50) {
                         break
                     }
 
-                    message.channel = reader.uint32()
+                    message.apIp = reader.string()
                     continue
                 }
                 case 7: {
-                    if (tag !== 56) {
+                    if (tag !== 58) {
                         break
                     }
 
-                    message.freeHeap = reader.uint32()
+                    message.apPassword = reader.string()
                     continue
                 }
                 case 8: {
@@ -939,7 +994,7 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
                         break
                     }
 
-                    message.minFreeHeap = reader.uint32()
+                    message.rssi = reader.int32()
                     continue
                 }
                 case 9: {
@@ -947,11 +1002,35 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
                         break
                     }
 
-                    message.maxFreeBlockSize = reader.uint32()
+                    message.channel = reader.uint32()
                     continue
                 }
                 case 10: {
                     if (tag !== 80) {
+                        break
+                    }
+
+                    message.freeHeap = reader.uint32()
+                    continue
+                }
+                case 11: {
+                    if (tag !== 88) {
+                        break
+                    }
+
+                    message.minFreeHeap = reader.uint32()
+                    continue
+                }
+                case 12: {
+                    if (tag !== 96) {
+                        break
+                    }
+
+                    message.maxFreeBlockSize = reader.uint32()
+                    continue
+                }
+                case 13: {
+                    if (tag !== 104) {
                         break
                     }
 
@@ -977,11 +1056,30 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
                 : isSet(object.wifi_mode)
                   ? deviceStatus_WifiModeFromJSON(object.wifi_mode)
                   : 0,
-            ssid: isSet(object.ssid) ? globalThis.String(object.ssid) : '',
-            ipAddress: isSet(object.ipAddress)
-                ? globalThis.String(object.ipAddress)
-                : isSet(object.ip_address)
-                  ? globalThis.String(object.ip_address)
+            staSsid: isSet(object.staSsid)
+                ? globalThis.String(object.staSsid)
+                : isSet(object.sta_ssid)
+                  ? globalThis.String(object.sta_ssid)
+                  : '',
+            staIp: isSet(object.staIp)
+                ? globalThis.String(object.staIp)
+                : isSet(object.sta_ip)
+                  ? globalThis.String(object.sta_ip)
+                  : '',
+            apSsid: isSet(object.apSsid)
+                ? globalThis.String(object.apSsid)
+                : isSet(object.ap_ssid)
+                  ? globalThis.String(object.ap_ssid)
+                  : '',
+            apIp: isSet(object.apIp)
+                ? globalThis.String(object.apIp)
+                : isSet(object.ap_ip)
+                  ? globalThis.String(object.ap_ip)
+                  : '',
+            apPassword: isSet(object.apPassword)
+                ? globalThis.String(object.apPassword)
+                : isSet(object.ap_password)
+                  ? globalThis.String(object.ap_password)
                   : '',
             rssi: isSet(object.rssi) ? globalThis.Number(object.rssi) : 0,
             channel: isSet(object.channel) ? globalThis.Number(object.channel) : 0,
@@ -1016,11 +1114,20 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
         if (message.wifiMode !== 0) {
             obj.wifiMode = deviceStatus_WifiModeToJSON(message.wifiMode)
         }
-        if (message.ssid !== '') {
-            obj.ssid = message.ssid
+        if (message.staSsid !== '') {
+            obj.staSsid = message.staSsid
         }
-        if (message.ipAddress !== '') {
-            obj.ipAddress = message.ipAddress
+        if (message.staIp !== '') {
+            obj.staIp = message.staIp
+        }
+        if (message.apSsid !== '') {
+            obj.apSsid = message.apSsid
+        }
+        if (message.apIp !== '') {
+            obj.apIp = message.apIp
+        }
+        if (message.apPassword !== '') {
+            obj.apPassword = message.apPassword
         }
         if (message.rssi !== 0) {
             obj.rssi = Math.round(message.rssi)
@@ -1050,14 +1157,157 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
         const message = createBaseDeviceStatus()
         message.connected = object.connected ?? false
         message.wifiMode = object.wifiMode ?? 0
-        message.ssid = object.ssid ?? ''
-        message.ipAddress = object.ipAddress ?? ''
+        message.staSsid = object.staSsid ?? ''
+        message.staIp = object.staIp ?? ''
+        message.apSsid = object.apSsid ?? ''
+        message.apIp = object.apIp ?? ''
+        message.apPassword = object.apPassword ?? ''
         message.rssi = object.rssi ?? 0
         message.channel = object.channel ?? 0
         message.freeHeap = object.freeHeap ?? 0
         message.minFreeHeap = object.minFreeHeap ?? 0
         message.maxFreeBlockSize = object.maxFreeBlockSize ?? 0
         message.uptimeSeconds = object.uptimeSeconds ?? 0
+        return message
+    },
+}
+
+function createBaseWifiConfig(): WifiConfig {
+    return { staSsid: '', staPassword: '', apSsid: '', apPassword: '', channel: 0 }
+}
+
+export const WifiConfig: MessageFns<WifiConfig> = {
+    encode(message: WifiConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+        if (message.staSsid !== '') {
+            writer.uint32(10).string(message.staSsid)
+        }
+        if (message.staPassword !== '') {
+            writer.uint32(18).string(message.staPassword)
+        }
+        if (message.apSsid !== '') {
+            writer.uint32(26).string(message.apSsid)
+        }
+        if (message.apPassword !== '') {
+            writer.uint32(34).string(message.apPassword)
+        }
+        if (message.channel !== 0) {
+            writer.uint32(40).uint32(message.channel)
+        }
+        return writer
+    },
+
+    decode(input: BinaryReader | Uint8Array, length?: number): WifiConfig {
+        const reader = input instanceof BinaryReader ? input : new BinaryReader(input)
+        const end = length === undefined ? reader.len : reader.pos + length
+        const message = createBaseWifiConfig()
+        while (reader.pos < end) {
+            const tag = reader.uint32()
+            switch (tag >>> 3) {
+                case 1: {
+                    if (tag !== 10) {
+                        break
+                    }
+
+                    message.staSsid = reader.string()
+                    continue
+                }
+                case 2: {
+                    if (tag !== 18) {
+                        break
+                    }
+
+                    message.staPassword = reader.string()
+                    continue
+                }
+                case 3: {
+                    if (tag !== 26) {
+                        break
+                    }
+
+                    message.apSsid = reader.string()
+                    continue
+                }
+                case 4: {
+                    if (tag !== 34) {
+                        break
+                    }
+
+                    message.apPassword = reader.string()
+                    continue
+                }
+                case 5: {
+                    if (tag !== 40) {
+                        break
+                    }
+
+                    message.channel = reader.uint32()
+                    continue
+                }
+            }
+            if ((tag & 7) === 4 || tag === 0) {
+                break
+            }
+            reader.skip(tag & 7)
+        }
+        return message
+    },
+
+    fromJSON(object: any): WifiConfig {
+        return {
+            staSsid: isSet(object.staSsid)
+                ? globalThis.String(object.staSsid)
+                : isSet(object.sta_ssid)
+                  ? globalThis.String(object.sta_ssid)
+                  : '',
+            staPassword: isSet(object.staPassword)
+                ? globalThis.String(object.staPassword)
+                : isSet(object.sta_password)
+                  ? globalThis.String(object.sta_password)
+                  : '',
+            apSsid: isSet(object.apSsid)
+                ? globalThis.String(object.apSsid)
+                : isSet(object.ap_ssid)
+                  ? globalThis.String(object.ap_ssid)
+                  : '',
+            apPassword: isSet(object.apPassword)
+                ? globalThis.String(object.apPassword)
+                : isSet(object.ap_password)
+                  ? globalThis.String(object.ap_password)
+                  : '',
+            channel: isSet(object.channel) ? globalThis.Number(object.channel) : 0,
+        }
+    },
+
+    toJSON(message: WifiConfig): unknown {
+        const obj: any = {}
+        if (message.staSsid !== '') {
+            obj.staSsid = message.staSsid
+        }
+        if (message.staPassword !== '') {
+            obj.staPassword = message.staPassword
+        }
+        if (message.apSsid !== '') {
+            obj.apSsid = message.apSsid
+        }
+        if (message.apPassword !== '') {
+            obj.apPassword = message.apPassword
+        }
+        if (message.channel !== 0) {
+            obj.channel = Math.round(message.channel)
+        }
+        return obj
+    },
+
+    create<I extends Exact<DeepPartial<WifiConfig>, I>>(base?: I): WifiConfig {
+        return WifiConfig.fromPartial(base ?? ({} as any))
+    },
+    fromPartial<I extends Exact<DeepPartial<WifiConfig>, I>>(object: I): WifiConfig {
+        const message = createBaseWifiConfig()
+        message.staSsid = object.staSsid ?? ''
+        message.staPassword = object.staPassword ?? ''
+        message.apSsid = object.apSsid ?? ''
+        message.apPassword = object.apPassword ?? ''
+        message.channel = object.channel ?? 0
         return message
     },
 }

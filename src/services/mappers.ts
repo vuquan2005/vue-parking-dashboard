@@ -175,8 +175,11 @@ export function mapDeviceStatus(status: ProtoDeviceStatus): DeviceInfo {
     return {
         connected: status.connected,
         wifiMode: mapWifiMode(status.wifiMode),
-        ssid: status.ssid,
-        ipAddress: status.ipAddress,
+        staSsid: status.staSsid,
+        staIp: status.staIp,
+        apSsid: status.apSsid,
+        apIp: status.apIp,
+        apPassword: status.apPassword,
         rssi: status.rssi,
         channel: status.channel,
         freeHeap: status.freeHeap,

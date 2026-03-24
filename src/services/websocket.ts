@@ -8,7 +8,7 @@
  * protobuf messages to the Pinia stores.
  */
 
-import { Parking } from '@/services/parking'
+import { Parking, type WifiConfig } from '@/services/parking'
 import {
     mapParkingStatus,
     mapParkingEvent,
@@ -183,4 +183,11 @@ export function sendWifiScan() {
     const deviceStore = useDeviceStore()
     deviceStore.setScanning(true)
     send({ wifiScanning: {} })
+}
+
+/**
+ * Send a WifiConfig message to the device.
+ */
+export function sendWifiConfig(config: NonNullable<WifiConfig>) {
+    send({ wifiConfig: config })
 }

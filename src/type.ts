@@ -56,8 +56,11 @@ export interface AccessPoint {
 export interface DeviceInfo {
     connected: boolean
     wifiMode: WifiMode
-    ssid: string
-    ipAddress: string
+    staSsid: string
+    staIp: string
+    apSsid: string
+    apIp: string
+    apPassword?: string
     rssi: number
     channel: number
     freeHeap: number

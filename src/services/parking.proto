@@ -9,6 +9,7 @@ message Parking {
     DeviceStatus  wifi_status    = 3;
     ParkingStatus parking_status = 4;
     ParkingEvent  parking_event  = 5;
+    WifiConfig    wifi_config    = 6;
   }
 }
 
@@ -52,14 +53,21 @@ message ScanResults {
 message DeviceStatus {
   bool     connected           = 1;
   WifiMode wifi_mode           = 2;
-  string   ssid                = 3; // max_size: 32 (nanopb)
-  string   ip_address          = 4; // max_size: 16 (nanopb)
-  int32    rssi                = 5;
-  uint32   channel             = 6;
-  uint32   free_heap           = 7;
-  uint32   min_free_heap       = 8;
-  uint32   max_free_block_size = 9;
-  uint32   uptime_seconds      = 10;
+
+  string   sta_ssid            = 3; // max_size: 32 (nanopb)
+  string   sta_ip              = 4; // max_size: 16 (nanopb)
+
+  string   ap_ssid             = 5; // max_size: 32 (nanopb)
+  string   ap_ip               = 6; // max_size: 16 (nanopb)
+  string   ap_password         = 7; // max_size: 64 (nanopb)
+
+  int32    rssi                = 8;
+  uint32   channel             = 9;
+
+  uint32   free_heap           = 10;
+  uint32   min_free_heap       = 11;
+  uint32   max_free_block_size = 12;
+  uint32   uptime_seconds      = 13;
 
   enum WifiMode {
     WIFI_MODE_NULL  = 0;
@@ -68,6 +76,14 @@ message DeviceStatus {
     WIFI_MODE_APSTA = 3;
     WIFI_MODE_NAN   = 4;
   }
+}
+
+message WifiConfig {
+  string sta_ssid     = 1; // max_size: 32 (nanopb)
+  string sta_password = 2; // max_size: 64 (nanopb)
+  string ap_ssid      = 3; // max_size: 32 (nanopb)
+  string ap_password  = 4; // max_size: 64 (nanopb)
+  uint32 channel      = 5;
 }
 
 message ParkingStatus {
