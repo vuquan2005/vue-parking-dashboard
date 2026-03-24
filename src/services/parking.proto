@@ -17,8 +17,8 @@ message WifiScanning {
 
 message ScanResults {
   message AP {
-    string       ssid       = 1; // max_size: 32
-    bytes        bssid      = 2; // 6 bytes MAC address
+    string       ssid       = 1; // max_size: 32 (nanopb)
+    bytes        bssid      = 2; // 6 bytes MAC address (nanopb)
     int32        rssi       = 3;
     uint32       channel    = 4;
     WifiAuthMode encryption = 5;
@@ -46,15 +46,15 @@ message ScanResults {
     WIFI_AUTH_WPA_ENTERPRISE          = 16;
   }
 
-  repeated AP access_points = 1; // max_count: 10
+  repeated AP access_points = 1; // max_count: 10 (nanopb)
 
 }
 
 message DeviceStatus {
   bool     connected           = 1;
   WifiMode wifi_mode           = 2;
-  string   ssid                = 3; // max_size: 32
-  string   ip_address          = 4; // max_size: 16
+  string   ssid                = 3; // max_size: 32 (nanopb)
+  string   ip_address          = 4; // max_size: 16 (nanopb)
   int32    rssi                = 5;
   uint32   channel             = 6;
   uint32   free_heap           = 7;
@@ -72,13 +72,13 @@ message DeviceStatus {
 }
 
 message ParkingStatus {
-  repeated SlotStatus slots = 1; // max_count: 15
+  repeated SlotStatus slots = 1; // max_count: 15 (nanopb)
 }
 
 message SlotStatus {
   uint32         slot_id = 1;
   Status         status  = 2;
-  repeated bytes rfid    = 3; // raw RFID tag bytes (10 bytes each), max_count: 15
+  repeated bytes rfid    = 3; // raw RFID tag bytes (10 bytes each), max_count: 15 (nanopb)
 
   enum Status {
     UNKNOWN    = 0;
