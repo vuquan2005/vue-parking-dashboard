@@ -9,12 +9,17 @@ import type {
     SlotStatus as ProtoSlotStatus,
     ParkingEvent as ProtoParkingEvent,
     ParkingStatus as ProtoParkingStatus,
+    ScanResults as ProtoScanResults,
+    ScanResults_AP as ProtoAP,
+    DeviceStatus as ProtoDeviceStatus,
 } from '@/services/parking'
 import {
     SlotStatus_Status,
     ParkingEvent_EventType,
     slotStatus_StatusToJSON,
     parkingEvent_EventTypeToJSON,
+    scanResults_WifiAuthModeToJSON,
+    deviceStatus_WifiModeToJSON,
 } from '@/services/parking'
 
 import type {
@@ -23,6 +28,10 @@ import type {
     SlotStatus,
     EventType,
     EventStatus,
+    AccessPoint,
+    DeviceInfo,
+    WifiAuthMode,
+    WifiMode,
 } from '@/type'
 
 // ---------------------------------------------------------------------------
@@ -122,5 +131,57 @@ export function mapParkingEvent(event: ProtoParkingEvent): ParkingEvent {
         status: deriveEventStatus(event),
         timestamp: Number(event.timestamp),
         process: deriveProcess(event),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Protobuf ScanResults → UI AccessPoint[]
+// ---------------------------------------------------------------------------
+
+function mapWifiAuthMode(proto: ProtoAP['encryption']): WifiAuthMode {
+    const key = scanResults_WifiAuthModeToJSON(proto)
+    // strip "WIFI_AUTH_" prefix → "OPEN", "WPA2_PSK", etc.
+    const stripped = key.replace(/^WIFI_AUTH_/, '')
+    if (stripped === 'UNRECOGNIZED') return 'UNKNOWN'
+    return stripped as WifiAuthMode
+}
+
+function mapAccessPoint(ap: ProtoAP): AccessPoint {
+    return {
+        ssid: ap.ssid,
+        bssid: rfidToHex(ap.bssid), // reuse hex formatter for MAC bytes
+        rssi: ap.rssi,
+        channel: ap.channel,
+        encryption: mapWifiAuthMode(ap.encryption),
+    }
+}
+
+export function mapScanResults(results: ProtoScanResults): AccessPoint[] {
+    return results.accessPoints.map(mapAccessPoint)
+}
+
+// ---------------------------------------------------------------------------
+// Protobuf DeviceStatus → UI DeviceInfo
+// ---------------------------------------------------------------------------
+
+function mapWifiMode(proto: ProtoDeviceStatus['wifiMode']): WifiMode {
+    const key = deviceStatus_WifiModeToJSON(proto)
+    const stripped = key.replace(/^WIFI_MODE_/, '')
+    if (stripped === 'UNRECOGNIZED') return 'UNKNOWN'
+    return stripped as WifiMode
+}
+
+export function mapDeviceStatus(status: ProtoDeviceStatus): DeviceInfo {
+    return {
+        connected: status.connected,
+        wifiMode: mapWifiMode(status.wifiMode),
+        ssid: status.ssid,
+        ipAddress: status.ipAddress,
+        rssi: status.rssi,
+        channel: status.channel,
+        freeHeap: status.freeHeap,
+        minFreeHeap: status.minFreeHeap,
+        maxFreeBlockSize: status.maxFreeBlockSize,
+        uptimeSeconds: status.uptimeSeconds,
     }
 }

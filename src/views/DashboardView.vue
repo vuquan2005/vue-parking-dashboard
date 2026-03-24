@@ -5,13 +5,13 @@ import ActivityLog from '@/components/ActivityLog.vue'
 import ParkingGrid from '@/components/ParkingGrid.vue'
 import StatCards from '@/components/StatCards.vue'
 import { Wifi, WifiOff, Loader2 } from 'lucide-vue-next'
-import { useParkingStore } from '@/stores/parking'
+import { useDeviceStore } from '@/stores/device'
 
 const router = useRouter()
-const store = useParkingStore()
+const deviceStore = useDeviceStore()
 
 const statusConfig = computed(() => {
-  switch (store.wsStatus) {
+  switch (deviceStore.wsStatus) {
     case 'connected':
       return {
         label: 'Connected',

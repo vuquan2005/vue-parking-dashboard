@@ -1,18 +1,22 @@
 /**
- * WebSocket composable for receiving protobuf Parking messages.
+ * WebSocket service for receiving protobuf Parking messages.
  *
  * Usage:
- *   const { status, connect, disconnect, send } = useParkingWebSocket()
+ *   import { connect, disconnect, send, sendWifiScan } from '@/services/websocket'
  *
- * The composable auto-connects on creation and auto-disconnects on
- * component unmount. It decodes incoming binary frames as Parking
- * protobuf messages and dispatches them to the Pinia store.
+ * The service connects globally and dispatches incoming binary frames as Parking
+ * protobuf messages to the Pinia stores.
  */
 
-import { ref, onUnmounted } from 'vue'
 import { Parking } from '@/services/parking'
-import { mapParkingStatus, mapParkingEvent } from '@/services/mappers'
+import {
+    mapParkingStatus,
+    mapParkingEvent,
+    mapScanResults,
+    mapDeviceStatus,
+} from '@/services/mappers'
 import { useParkingStore } from '@/stores/parking'
+import { useDeviceStore } from '@/stores/device'
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 
@@ -22,154 +26,161 @@ const WS_URL = import.meta.env.VITE_WS_URL as string | undefined
 const RECONNECT_BASE_MS = 1_000
 const RECONNECT_MAX_MS = 30_000
 
-export function useParkingWebSocket(url?: string) {
-    const resolvedUrl = url ?? WS_URL
-    const status = ref<ConnectionStatus>('disconnected')
+let ws: WebSocket | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectDelay = RECONNECT_BASE_MS
+let shouldReconnect = true
+let resolvedUrl = WS_URL
 
-    let ws: WebSocket | null = null
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-    let reconnectDelay = RECONNECT_BASE_MS
-    let shouldReconnect = true
+// -----------------------------------------------------------------------
+// Core handlers
+// -----------------------------------------------------------------------
 
-    // -----------------------------------------------------------------------
-    // Core handlers
-    // -----------------------------------------------------------------------
-
-    function handleMessage(event: MessageEvent) {
-        if (!(event.data instanceof ArrayBuffer)) {
-            console.warn('[ws] Ignoring non-binary message')
-            return
-        }
-
-        try {
-            const bytes = new Uint8Array(event.data)
-            const parking = Parking.decode(bytes)
-            dispatch(parking)
-        } catch (err) {
-            console.error('[ws] Failed to decode Parking message:', err)
-        }
+function handleMessage(event: MessageEvent) {
+    if (!(event.data instanceof ArrayBuffer)) {
+        console.warn('[ws] Ignoring non-binary message')
+        return
     }
 
-    function dispatch(parking: ReturnType<typeof Parking.decode>) {
-        const store = useParkingStore()
+    try {
+        const bytes = new Uint8Array(event.data)
+        const parking = Parking.decode(bytes)
+        dispatch(parking)
+    } catch (err) {
+        console.error('[ws] Failed to decode Parking message:', err)
+    }
+}
 
-        if (parking.parkingStatus) {
-            const slots = mapParkingStatus(parking.parkingStatus)
-            store.updateAllSlot(slots)
-        }
+function dispatch(parking: ReturnType<typeof Parking.decode>) {
+    const parkingStore = useParkingStore()
+    const deviceStore = useDeviceStore()
 
-        if (parking.parkingEvent) {
-            const event = mapParkingEvent(parking.parkingEvent)
-            store.addEvent(event)
-        }
-
-        // WifiScanning, ScanResults, DeviceStatus — skipped for now
+    if (parking.parkingStatus) {
+        const slots = mapParkingStatus(parking.parkingStatus)
+        parkingStore.updateAllSlot(slots)
     }
 
-    // -----------------------------------------------------------------------
-    // Connection lifecycle
-    // -----------------------------------------------------------------------
+    if (parking.parkingEvent) {
+        const event = mapParkingEvent(parking.parkingEvent)
+        parkingStore.addEvent(event)
+    }
 
-    function connect() {
-        if (!resolvedUrl) {
-            console.warn('[ws] No WebSocket URL configured (set VITE_WS_URL)')
-            status.value = 'disconnected'
-            return
-        }
+    if (parking.scanResults) {
+        const aps = mapScanResults(parking.scanResults)
+        deviceStore.updateScanResults(aps)
+    }
 
-        cleanup()
-        shouldReconnect = true
-        status.value = 'connecting'
+    if (parking.wifiStatus) {
+        const info = mapDeviceStatus(parking.wifiStatus)
+        deviceStore.updateDeviceStatus(info)
+    }
 
-        try {
-            ws = new WebSocket(resolvedUrl)
-            ws.binaryType = 'arraybuffer'
+    // WifiScanning (incoming) is an ack — no action needed
+}
 
-            ws.addEventListener('open', () => {
-                status.value = 'connected'
-                reconnectDelay = RECONNECT_BASE_MS // reset backoff
-                console.info('[ws] Connected to', resolvedUrl)
-            })
+function setStatus(status: ConnectionStatus) {
+    const deviceStore = useDeviceStore()
+    deviceStore.updateWsStatus(status)
+}
 
-            ws.addEventListener('message', handleMessage)
+// -----------------------------------------------------------------------
+// Connection lifecycle
+// -----------------------------------------------------------------------
 
-            ws.addEventListener('close', () => {
-                status.value = 'disconnected'
-                console.info('[ws] Disconnected')
-                scheduleReconnect()
-            })
+export function connect(url?: string) {
+    if (url) {
+        resolvedUrl = url
+    }
+    if (!resolvedUrl) {
+        console.warn('[ws] No WebSocket URL configured (set VITE_WS_URL)')
+        setStatus('disconnected')
+        return
+    }
 
-            ws.addEventListener('error', (err) => {
-                status.value = 'error'
-                console.error('[ws] Error:', err)
-                // 'close' event will fire after this, triggering reconnect
-            })
-        } catch (err) {
-            status.value = 'error'
-            console.error('[ws] Failed to create WebSocket:', err)
+    cleanup()
+    shouldReconnect = true
+    setStatus('connecting')
+
+    try {
+        ws = new WebSocket(resolvedUrl)
+        ws.binaryType = 'arraybuffer'
+
+        ws.addEventListener('open', () => {
+            setStatus('connected')
+            reconnectDelay = RECONNECT_BASE_MS // reset backoff
+            console.info('[ws] Connected to', resolvedUrl)
+        })
+
+        ws.addEventListener('message', handleMessage)
+
+        ws.addEventListener('close', () => {
+            setStatus('disconnected')
+            console.info('[ws] Disconnected')
             scheduleReconnect()
-        }
+        })
+
+        ws.addEventListener('error', (err) => {
+            setStatus('error')
+            console.error('[ws] Error:', err)
+            // 'close' event will fire after this, triggering reconnect
+        })
+    } catch (err) {
+        setStatus('error')
+        console.error('[ws] Failed to create WebSocket:', err)
+        scheduleReconnect()
     }
+}
 
-    function disconnect() {
-        shouldReconnect = false
-        cleanup()
-        status.value = 'disconnected'
+export function disconnect() {
+    shouldReconnect = false
+    cleanup()
+    setStatus('disconnected')
+}
+
+function cleanup() {
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
+        reconnectTimer = null
     }
-
-    function cleanup() {
-        if (reconnectTimer) {
-            clearTimeout(reconnectTimer)
-            reconnectTimer = null
-        }
-        if (ws) {
-            ws.close()
-            ws = null
-        }
+    if (ws) {
+        ws.close()
+        ws = null
     }
+}
 
-    function scheduleReconnect() {
-        if (!shouldReconnect) return
+function scheduleReconnect() {
+    if (!shouldReconnect) return
 
-        reconnectTimer = setTimeout(() => {
-            reconnectTimer = null
-            console.info(`[ws] Reconnecting (delay: ${reconnectDelay}ms)…`)
-            connect()
-        }, reconnectDelay)
+    reconnectTimer = setTimeout(() => {
+        reconnectTimer = null
+        console.info(`[ws] Reconnecting (delay: ${reconnectDelay}ms)…`)
+        connect()
+    }, reconnectDelay)
 
-        // Exponential backoff
-        reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS)
+    // Exponential backoff
+    reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS)
+}
+
+// -----------------------------------------------------------------------
+// Send (encode & send a Parking message)
+// -----------------------------------------------------------------------
+
+export function send(message: Parameters<typeof Parking.encode>[0]) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        console.warn('[ws] Cannot send – not connected')
+        return
     }
+    const bytes = Parking.encode(message).finish()
+    ws.send(bytes)
+}
 
-    // -----------------------------------------------------------------------
-    // Send (encode & send a Parking message)
-    // -----------------------------------------------------------------------
-
-    function send(message: Parameters<typeof Parking.encode>[0]) {
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            console.warn('[ws] Cannot send – not connected')
-            return
-        }
-        const bytes = Parking.encode(message).finish()
-        ws.send(bytes)
-    }
-
-    // -----------------------------------------------------------------------
-    // Auto-cleanup on component unmount
-    // -----------------------------------------------------------------------
-
-    onUnmounted(() => {
-        disconnect()
-    })
-
-    return {
-        /** Reactive connection status */
-        status,
-        /** Manually connect (auto-called if you want) */
-        connect,
-        /** Disconnect and stop auto-reconnect */
-        disconnect,
-        /** Encode and send a Parking protobuf message */
-        send,
-    }
+/**
+ * Send a WifiScanning request to the device.
+ * Sets `deviceStore.isScanning = true`; it will be cleared
+ * automatically when ScanResults arrive.
+ */
+export function sendWifiScan() {
+    const deviceStore = useDeviceStore()
+    deviceStore.setScanning(true)
+    send({ wifiScanning: {} })
 }
