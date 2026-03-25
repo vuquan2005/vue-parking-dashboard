@@ -66,7 +66,7 @@ function buildInitialEvents(): ProtoParkingEvent[] {
         {
             eventId: eventIdCounter++,
             slotId: 3,
-            timestamp: Date.now() - 1000 * 60 * 60 * 2,
+            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).getTime(),
             eventType: ParkingEvent_EventType.IN,
             rfid: rfidA3,
             step: 5,
@@ -76,7 +76,7 @@ function buildInitialEvents(): ProtoParkingEvent[] {
         {
             eventId: eventIdCounter++,
             slotId: 5,
-            timestamp: Date.now() - 1000 * 60 * 45,
+            timestamp: new Date(Date.now() - 1000 * 60 * 45).getTime(),
             eventType: ParkingEvent_EventType.IN,
             rfid: rfidB1,
             step: 5,
@@ -86,7 +86,7 @@ function buildInitialEvents(): ProtoParkingEvent[] {
         {
             eventId: eventIdCounter++,
             slotId: 6,
-            timestamp: Date.now() - 1000 * 60 * 2,
+            timestamp: new Date(Date.now() - 1000 * 60 * 2).getTime(),
             eventType: ParkingEvent_EventType.OUT,
             rfid: rfidB2,
             step: 2,
@@ -96,7 +96,7 @@ function buildInitialEvents(): ProtoParkingEvent[] {
         {
             eventId: eventIdCounter++,
             slotId: 9,
-            timestamp: Date.now() - 1000 * 30,
+            timestamp: new Date(Date.now() - 1000 * 30).getTime(),
             eventType: ParkingEvent_EventType.IN,
             rfid: rfidC1,
             step: 1,
@@ -106,7 +106,7 @@ function buildInitialEvents(): ProtoParkingEvent[] {
         {
             eventId: eventIdCounter++,
             slotId: 1,
-            timestamp: Date.now() - 1000 * 60 * 60 * 5,
+            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).getTime(),
             eventType: ParkingEvent_EventType.OUT,
             rfid: rfidA1,
             step: 5,
@@ -210,7 +210,7 @@ function tick() {
                 newEvent = {
                     eventId: eventIdCounter++,
                     slotId: slot.slotId,
-                    timestamp: Date.now(),
+                    timestamp: new Date(Date.now()).getTime(),
                     eventType: ParkingEvent_EventType.IN,
                     rfid,
                     step: 0,
@@ -226,7 +226,7 @@ function tick() {
                 newEvent = {
                     eventId: eventIdCounter++,
                     slotId: slot.slotId,
-                    timestamp: Date.now(),
+                    timestamp: new Date(Date.now()).getTime(),
                     eventType: ParkingEvent_EventType.OUT,
                     rfid,
                     step: 0,
