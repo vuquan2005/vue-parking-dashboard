@@ -35,11 +35,14 @@ function statusLabel(status: string) {
       return 'CÓ XE'
     case 'PROCESSING':
       return 'ĐANG XỬ LÝ'
+    case 'PENDING':
+      return 'ĐANG CHỜ'
     case 'NO_PALLET':
       return '---'
     case 'EMPTY':
-    default:
       return 'TRỐNG'
+    default:
+      return 'ERROR'
   }
 }
 
@@ -49,11 +52,14 @@ function statusBadgeClass(status: string) {
       return 'bg-red-100 text-red-700 ring-red-500/20'
     case 'PROCESSING':
       return 'bg-yellow-100 text-yellow-700 ring-yellow-500/20'
+    case 'PENDING':
+      return 'bg-yellow-100 text-yellow-700 ring-yellow-500/20'
     case 'NO_PALLET':
       return 'bg-gray-200 text-gray-500 ring-gray-400/20'
     case 'EMPTY':
-    default:
       return 'bg-emerald-100 text-emerald-700 ring-emerald-500/20'
+    default:
+      return 'bg-red-100 text-red-700 ring-red-500/20'
   }
 }
 </script>
