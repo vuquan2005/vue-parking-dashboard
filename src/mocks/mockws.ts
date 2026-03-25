@@ -19,6 +19,23 @@ import {
 import { dispatch, setStatus } from '@/services/websocket'
 
 // ---------------------------------------------------------------------------
+// HMR singleton guard (globalThis survives module re-evaluation)
+// ---------------------------------------------------------------------------
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const globalState = globalThis as any
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        if (globalState.__mockInterval) {
+            clearInterval(globalState.__mockInterval)
+            globalState.__mockInterval = null
+        }
+        globalState.__isMockWsInitialized = false
+    })
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -250,6 +267,9 @@ function tick() {
 // ---------------------------------------------------------------------------
 
 export function initMockWs() {
+    if (globalState.__isMockWsInitialized) return
+    globalState.__isMockWsInitialized = true
+
     // Simulate "connected" status
     setStatus('connected')
 
@@ -319,5 +339,5 @@ export function initMockWs() {
     })
 
     // Start periodic simulation
-    setInterval(tick, 2000)
+    globalState.__mockInterval = setInterval(tick, 2000)
 }

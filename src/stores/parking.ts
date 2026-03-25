@@ -20,12 +20,12 @@ export const useParkingStore = defineStore('parking', () => {
             events.value.push(event)
         }
 
-        localStorage.setItem('events', JSON.stringify(events.value))
+        // localStorage.setItem('events', JSON.stringify(events.value))
     }
 
     function updateAllSlot(newSlots: ParkingSlot[]) {
         slots.value = newSlots
-        localStorage.setItem('slots', JSON.stringify(newSlots))
+        // localStorage.setItem('slots', JSON.stringify(newSlots))
     }
 
     const slots = ref<ParkingSlot[]>([])
