@@ -29,17 +29,18 @@ function randomBytes(len: number): Uint8Array {
 }
 
 let eventIdCounter = 1
+const plateRfidNum = 6
 
 // ---------------------------------------------------------------------------
 // Initial mock protobuf data
 // ---------------------------------------------------------------------------
 
-const rfidA3 = randomBytes(10)
-const rfidB1 = randomBytes(10)
-const rfidB2 = randomBytes(10)
-const rfidC1 = randomBytes(10)
-const rfidC3 = randomBytes(10)
-const rfidA1 = randomBytes(10)
+const rfidA3 = randomBytes(plateRfidNum)
+const rfidB1 = randomBytes(plateRfidNum)
+const rfidB2 = randomBytes(plateRfidNum)
+const rfidC1 = randomBytes(plateRfidNum)
+const rfidC3 = randomBytes(plateRfidNum)
+const rfidA1 = randomBytes(plateRfidNum)
 
 function buildInitialSlots(): SlotStatus[] {
     return [
@@ -53,7 +54,7 @@ function buildInitialSlots(): SlotStatus[] {
         { slotId: 7, status: SlotStatus_Status.NO_PALLET, rfid: [] },
         { slotId: 8, status: SlotStatus_Status.EMPTY, rfid: [] },
 
-        { slotId: 9, status: SlotStatus_Status.PENDING, rfid: [rfidC1] },
+        { slotId: 9, status: SlotStatus_Status.OCCUPIED, rfid: [rfidC1] },
         { slotId: 10, status: SlotStatus_Status.EMPTY, rfid: [] },
         { slotId: 11, status: SlotStatus_Status.OCCUPIED, rfid: [rfidC3] },
         { slotId: 12, status: SlotStatus_Status.NO_PALLET, rfid: [] },
@@ -205,7 +206,7 @@ function tick() {
             if (emptySlots.length > 0 && Math.random() < 0.5) {
                 // IN event
                 const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!
-                const rfid = randomBytes(10)
+                const rfid = randomBytes(plateRfidNum)
                 newEvent = {
                     eventId: eventIdCounter++,
                     slotId: slot.slotId,
@@ -221,7 +222,7 @@ function tick() {
                 // OUT event
                 const slot =
                     occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)]!
-                const rfid = slotRfidMap.get(slot.slotId) ?? randomBytes(10)
+                const rfid = slotRfidMap.get(slot.slotId) ?? randomBytes(plateRfidNum)
                 newEvent = {
                     eventId: eventIdCounter++,
                     slotId: slot.slotId,
