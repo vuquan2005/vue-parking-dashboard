@@ -51,7 +51,7 @@ function handleMessage(event: MessageEvent) {
     }
 }
 
-function dispatch(parking: ReturnType<typeof Parking.decode>) {
+export function dispatch(parking: ReturnType<typeof Parking.decode>) {
     const parkingStore = useParkingStore()
     const deviceStore = useDeviceStore()
 
@@ -78,7 +78,7 @@ function dispatch(parking: ReturnType<typeof Parking.decode>) {
     // WifiScanning (incoming) is an ack — no action needed
 }
 
-function setStatus(status: ConnectionStatus) {
+export function setStatus(status: ConnectionStatus) {
     const deviceStore = useDeviceStore()
     deviceStore.updateWsStatus(status)
 }
