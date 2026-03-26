@@ -39,5 +39,4 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # Env
-*.env.*
-!.env.ghpages
+# local only

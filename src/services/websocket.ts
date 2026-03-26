@@ -20,8 +20,6 @@ import { useDeviceStore } from '@/stores/device'
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 
-const WS_URL = import.meta.env.VITE_WS_URL as string | undefined
-
 // Reconnect config
 const RECONNECT_BASE_MS = 1_000
 const RECONNECT_MAX_MS = 30_000
@@ -30,7 +28,14 @@ let ws: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let reconnectDelay = RECONNECT_BASE_MS
 let shouldReconnect = true
-let resolvedUrl = WS_URL
+let resolvedUrl = ''
+
+export const getStoredWsUrl = () => localStorage.getItem('ws_url') || ''
+
+export const getDefaultWsUrl = () => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${window.location.host}/ws`
+}
 
 // -----------------------------------------------------------------------
 // Core handlers
@@ -87,12 +92,11 @@ export function setStatus(status: ConnectionStatus) {
 // Connection lifecycle
 // -----------------------------------------------------------------------
 
-export function connect(url?: string) {
-    if (url) {
-        resolvedUrl = url
-    }
+export function connect() {
+    resolvedUrl = getStoredWsUrl() || getDefaultWsUrl()
+
     if (!resolvedUrl) {
-        console.warn('[ws] No WebSocket URL configured (set VITE_WS_URL)')
+        console.warn('[ws] No WebSocket URL configured')
         setStatus('disconnected')
         return
     }

@@ -4,17 +4,15 @@ import { RouterView } from 'vue-router'
 import { initMockWs } from '@/mocks/mockws'
 import { connect } from '@/services/websocket'
 
-const wsUrl = import.meta.env.VITE_WS_URL as string | undefined
+const isMock = import.meta.env.VITE_WS_MOCK
 
-if (wsUrl) {
-  // WebSocket mode: connect to the device
-  onMounted(() => {
-    connect(wsUrl)
-  })
-} else {
-  // Demo mode: no WS URL configured → use mock data (WebSocket-level)
+if (isMock) {
   onMounted(() => {
     initMockWs()
+  })
+} else {
+  onMounted(() => {
+    connect()
   })
 }
 </script>
