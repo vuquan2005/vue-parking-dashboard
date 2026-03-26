@@ -87,6 +87,7 @@ export function mapSlotStatus(slot: ProtoSlotStatus): ParkingSlot {
     return {
         slotLabel: slotIdToLabel(slot.slotId),
         status: mapProtoStatusToUI(slot.status),
+        palletId: String(slot.palletId),
         rfid: firstRfid ? rfidToHex(firstRfid) : undefined,
     }
 }

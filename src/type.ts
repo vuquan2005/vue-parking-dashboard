@@ -3,6 +3,7 @@ export type SlotStatus = 'NO_PALLET' | 'EMPTY' | 'OCCUPIED' | 'PROCESSING' | 'PE
 export interface ParkingSlot {
     slotLabel: string
     status: SlotStatus
+    palletId: string
     rfid?: string
 }
 

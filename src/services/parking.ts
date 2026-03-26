@@ -2,7 +2,7 @@
 // versions:
 //   protoc-gen-ts_proto  v2.11.5
 //   protoc               v3.21.12
-// source: parking.proto
+// source: src/services/parking.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from '@bufbuild/protobuf/wire'
@@ -253,6 +253,7 @@ export interface SlotStatus {
     status: SlotStatus_Status
     /** raw RFID tag bytes (10 bytes each), max_count: 15 (nanopb) */
     rfid: Uint8Array[]
+    palletId: number
 }
 
 export enum SlotStatus_Status {
@@ -1380,7 +1381,7 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
 }
 
 function createBaseSlotStatus(): SlotStatus {
-    return { slotId: 0, status: 0, rfid: [] }
+    return { slotId: 0, status: 0, rfid: [], palletId: 0 }
 }
 
 export const SlotStatus: MessageFns<SlotStatus> = {
@@ -1393,6 +1394,9 @@ export const SlotStatus: MessageFns<SlotStatus> = {
         }
         for (const v of message.rfid) {
             writer.uint32(26).bytes(v!)
+        }
+        if (message.palletId !== 0) {
+            writer.uint32(32).uint32(message.palletId)
         }
         return writer
     },
@@ -1428,6 +1432,14 @@ export const SlotStatus: MessageFns<SlotStatus> = {
                     message.rfid.push(reader.bytes())
                     continue
                 }
+                case 4: {
+                    if (tag !== 32) {
+                        break
+                    }
+
+                    message.palletId = reader.uint32()
+                    continue
+                }
             }
             if ((tag & 7) === 4 || tag === 0) {
                 break
@@ -1448,6 +1460,11 @@ export const SlotStatus: MessageFns<SlotStatus> = {
             rfid: globalThis.Array.isArray(object?.rfid)
                 ? object.rfid.map((e: any) => bytesFromBase64(e))
                 : [],
+            palletId: isSet(object.palletId)
+                ? globalThis.Number(object.palletId)
+                : isSet(object.pallet_id)
+                  ? globalThis.Number(object.pallet_id)
+                  : 0,
         }
     },
 
@@ -1462,6 +1479,9 @@ export const SlotStatus: MessageFns<SlotStatus> = {
         if (message.rfid?.length) {
             obj.rfid = message.rfid.map((e) => base64FromBytes(e))
         }
+        if (message.palletId !== 0) {
+            obj.palletId = Math.round(message.palletId)
+        }
         return obj
     },
 
@@ -1473,6 +1493,7 @@ export const SlotStatus: MessageFns<SlotStatus> = {
         message.slotId = object.slotId ?? 0
         message.status = object.status ?? 0
         message.rfid = object.rfid?.map((e) => e) || []
+        message.palletId = object.palletId ?? 0
         return message
     },
 }

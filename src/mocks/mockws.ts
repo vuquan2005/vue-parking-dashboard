@@ -61,20 +61,20 @@ const rfidA1 = randomBytes(plateRfidNum)
 
 function buildInitialSlots(): SlotStatus[] {
     return [
-        { slotId: 1, status: SlotStatus_Status.EMPTY, rfid: [] },
-        { slotId: 2, status: SlotStatus_Status.EMPTY, rfid: [] },
-        { slotId: 3, status: SlotStatus_Status.OCCUPIED, rfid: [rfidA3] },
-        { slotId: 4, status: SlotStatus_Status.EMPTY, rfid: [] },
+        { slotId: 1, palletId: 1, status: SlotStatus_Status.EMPTY, rfid: [] },
+        { slotId: 2, palletId: 2, status: SlotStatus_Status.EMPTY, rfid: [] },
+        { slotId: 3, palletId: 3, status: SlotStatus_Status.OCCUPIED, rfid: [rfidA3] },
+        { slotId: 4, palletId: 4, status: SlotStatus_Status.EMPTY, rfid: [] },
 
-        { slotId: 5, status: SlotStatus_Status.OCCUPIED, rfid: [rfidB1] },
-        { slotId: 6, status: SlotStatus_Status.PROCESSING, rfid: [rfidB2] },
-        { slotId: 7, status: SlotStatus_Status.NO_PALLET, rfid: [] },
-        { slotId: 8, status: SlotStatus_Status.EMPTY, rfid: [] },
+        { slotId: 5, palletId: 5, status: SlotStatus_Status.OCCUPIED, rfid: [rfidB1] },
+        { slotId: 6, palletId: 6, status: SlotStatus_Status.PROCESSING, rfid: [rfidB2] },
+        { slotId: 7, palletId: 7, status: SlotStatus_Status.NO_PALLET, rfid: [] },
+        { slotId: 8, palletId: 8, status: SlotStatus_Status.EMPTY, rfid: [] },
 
-        { slotId: 9, status: SlotStatus_Status.OCCUPIED, rfid: [rfidC1] },
-        { slotId: 10, status: SlotStatus_Status.EMPTY, rfid: [] },
-        { slotId: 11, status: SlotStatus_Status.OCCUPIED, rfid: [rfidC3] },
-        { slotId: 12, status: SlotStatus_Status.NO_PALLET, rfid: [] },
+        { slotId: 9, palletId: 9, status: SlotStatus_Status.OCCUPIED, rfid: [rfidC1] },
+        { slotId: 10, palletId: 10, status: SlotStatus_Status.EMPTY, rfid: [] },
+        { slotId: 11, palletId: 11, status: SlotStatus_Status.OCCUPIED, rfid: [rfidC3] },
+        { slotId: 12, palletId: 12, status: SlotStatus_Status.NO_PALLET, rfid: [] },
     ]
 }
 
@@ -212,7 +212,7 @@ function tick() {
                 s.status === SlotStatus_Status.PENDING,
         )
 
-        if (!isAnyBusy && Math.random() < 0.2) {
+        if (!isAnyBusy && Math.random() < 0.8) {
             const emptySlots = slots.filter((s) => s.status === SlotStatus_Status.EMPTY)
             const occupiedSlots = slots.filter(
                 (s) => s.status === SlotStatus_Status.OCCUPIED,
@@ -220,7 +220,7 @@ function tick() {
 
             let newEvent: ProtoParkingEvent | null = null
 
-            if (emptySlots.length > 0 && Math.random() < 0.5) {
+            if (emptySlots.length > 0 && Math.random() < 0.3) {
                 // IN event
                 const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!
                 const rfid = randomBytes(plateRfidNum)
@@ -235,7 +235,7 @@ function tick() {
                     currentStep: { stepId: 0, task: ParkingSteps_Task.MOVE_UP },
                 }
                 slot.status = SlotStatus_Status.PROCESSING
-            } else if (occupiedSlots.length > 0) {
+            } else if (occupiedSlots.length > 0 && Math.random() < 0.3) {
                 // OUT event
                 const slot =
                     occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)]!
@@ -253,10 +253,46 @@ function tick() {
                 slot.status = SlotStatus_Status.PROCESSING
             }
 
-            if (newEvent) {
+            if (newEvent !== null) {
                 events.push(newEvent)
                 sendMockMessage({ parkingEvent: newEvent })
                 sendMockMessage({ parkingStatus: { slots } })
+            } else {
+                // Simulate puzzle movement by swapping NO_PALLET with an adjacent slot
+                const targetIdx = slots.findIndex(
+                    (s) => s.status === SlotStatus_Status.NO_PALLET,
+                )
+                if (targetIdx !== -1) {
+                    const adjacents = []
+                    if (targetIdx % 4 !== 0) adjacents.push(targetIdx - 1)
+                    if (targetIdx % 4 !== 3) adjacents.push(targetIdx + 1)
+                    // if (targetIdx >= 4) adjacents.push(targetIdx - 4)
+                    // if (targetIdx < 8) adjacents.push(targetIdx + 4)
+
+                    const swapIdx =
+                        adjacents[Math.floor(Math.random() * adjacents.length)]!
+                    const swapSlot = slots[swapIdx]
+                    const targetSlot = slots[targetIdx]
+                    if (
+                        swapSlot &&
+                        swapSlot.status !== SlotStatus_Status.NO_PALLET &&
+                        targetSlot
+                    ) {
+                        const tempStatus = swapSlot.status
+                        const tempRfid = swapSlot.rfid
+                        const tempPalletId = swapSlot.palletId
+
+                        swapSlot.status = targetSlot.status
+                        swapSlot.rfid = targetSlot.rfid
+                        swapSlot.palletId = targetSlot.palletId
+
+                        targetSlot.status = tempStatus
+                        targetSlot.rfid = tempRfid
+                        targetSlot.palletId = tempPalletId
+
+                        sendMockMessage({ parkingStatus: { slots } })
+                    }
+                }
             }
         }
     }
@@ -339,5 +375,5 @@ export function initMockWs() {
     })
 
     // Start periodic simulation
-    globalState.__mockInterval = setInterval(tick, 2000)
+    globalState.__mockInterval = setInterval(tick, 500)
 }

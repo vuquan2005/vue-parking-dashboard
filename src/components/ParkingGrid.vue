@@ -70,8 +70,8 @@ function statusBadgeClass(status: string) {
       <Car class="w-5 h-5 text-gray-500" />
       Sơ đồ bãi đỗ
     </h2>
-    <div class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 min-h-0 flex-1">
-      <div v-for="slot in store.slots" :key="slot.slotLabel"
+    <transition-group name="pallet" tag="div" class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 min-h-0 flex-1 relative">
+      <div v-for="slot in store.slots" :key="slot.palletId"
         :class="[slotClasses(slot.status), filterClasses(slot.status)]">
         <!-- ID label -->
         <span class="text-lg font-bold leading-none">{{ slot.slotLabel }}</span>
@@ -87,11 +87,14 @@ function statusBadgeClass(status: string) {
           </span>
         </div>
       </div>
-    </div>
+    </transition-group>
   </div>
 </template>
 
 <style scoped>
+.pallet-move {
+  transition: transform 0.5s ease-in-out;
+}
 .processing-opacity {
   animation: processing-opacity 1.4s ease-in-out infinite;
 }
