@@ -46,7 +46,7 @@ const statusConfig = computed(() => {
 </script>
 
 <template>
-  <div class="h-screen bg-gray-100 p-6 flex flex-col">
+  <div class="min-h-screen lg:h-screen bg-gray-100 p-4 lg:p-6 flex flex-col">
     <!-- Header -->
     <div class="mb-6 shrink-0 flex items-center justify-between rounded-2xl bg-white px-8 py-5 shadow-sm">
       <div class="flex items-center gap-4">
@@ -63,15 +63,15 @@ const statusConfig = computed(() => {
     </div>
 
     <!-- Main Content -->
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 flex-1 min-h-0">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 flex-1 lg:min-h-0">
       <!-- Left Column: Stat Cards + Grid -->
-      <div class="lg:col-span-2 flex flex-col gap-6 min-h-0">
+      <div class="lg:col-span-2 flex flex-col gap-6 min-h-[500px] lg:min-h-0">
         <StatCards class="shrink-0" />
         <ParkingGrid class="flex-1 min-h-0" />
       </div>
 
       <!-- Right Column: Activity Log -->
-      <div class="min-h-0">
+      <div class="min-h-[400px] lg:min-h-0">
         <ActivityLog class="h-full" />
       </div>
     </div>

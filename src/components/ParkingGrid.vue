@@ -70,7 +70,8 @@ function statusBadgeClass(status: string) {
       <Car class="w-5 h-5 text-gray-500" />
       Sơ đồ bãi đỗ
     </h2>
-    <transition-group name="pallet" tag="div" class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 min-h-0 flex-1 relative">
+    <transition-group name="pallet" tag="div"
+      class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 min-h-0 flex-1 relative">
       <div v-for="slot in store.slots" :key="slot.palletId"
         :class="[slotClasses(slot.status), filterClasses(slot.status)]">
         <!-- ID label -->
@@ -95,6 +96,7 @@ function statusBadgeClass(status: string) {
 .pallet-move {
   transition: transform 0.5s ease-in-out;
 }
+
 .processing-opacity {
   animation: processing-opacity 1.4s ease-in-out infinite;
 }
