@@ -220,7 +220,9 @@ function tick() {
 
             let newEvent: ProtoParkingEvent | null = null
 
-            if (emptySlots.length > 0 && Math.random() < 0.3) {
+            const random = Math.random()
+
+            if (emptySlots.length > 0 && random < 0.4) {
                 // IN event
                 const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!
                 const rfid = randomBytes(plateRfidNum)
@@ -235,7 +237,7 @@ function tick() {
                     currentStep: { stepId: 0, task: ParkingSteps_Task.MOVE_UP },
                 }
                 slot.status = SlotStatus_Status.PROCESSING
-            } else if (occupiedSlots.length > 0 && Math.random() < 0.3) {
+            } else if (occupiedSlots.length > 0 && random > 0.5) {
                 // OUT event
                 const slot =
                     occupiedSlots[Math.floor(Math.random() * occupiedSlots.length)]!
