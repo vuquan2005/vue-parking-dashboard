@@ -1,8 +1,8 @@
-type ParkingTask =
+export type ParkingTask =
     | { type: 'MOVE_PALLET'; row: number; fromCol: number; toCol: number }
     | { type: 'SET_SLOT_DATA'; palletId: number; plateNumber: string }
 
-enum SlotStatus {
+export enum SlotStatus {
     NO_PALLET,
     PROCESSING,
     PENDING,
