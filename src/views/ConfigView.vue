@@ -1,30 +1,24 @@
 <script setup lang="ts">
 import { ref, type Component } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Wifi, Radio, ScanSearch, Settings, Network } from 'lucide-vue-next'
+import { ArrowLeft, Wifi, Network } from 'lucide-vue-next'
 
 import InfoPanel from '@/components/config/InfoPanel.vue'
-import StaTab from '@/components/config/StaTab.vue'
-import ApTab from '@/components/config/ApTab.vue'
-import ScanTab from '@/components/config/ScanTab.vue'
-import SystemTab from '@/components/config/SystemTab.vue'
 import WsTab from '@/components/config/WsTab.vue'
+import WifiTab from '@/components/config/WifiTab.vue'
 
 const router = useRouter()
 
 // ---------------------------------------------------------------------------
 // Tab management
 // ---------------------------------------------------------------------------
-type TabId = 'STA' | 'AP' | 'SCAN' | 'SYSTEM' | 'WS'
+type TabId = 'WIFI' | 'SYSTEM' | 'WS'
 
-const activeTab = ref<TabId>('STA')
+const activeTab = ref<TabId>('WIFI')
 
 const tabs: { id: TabId; label: string; icon: Component }[] = [
   { id: 'WS', label: 'WebSocket', icon: Network },
-  { id: 'AP', label: 'AP', icon: Radio },
-  { id: 'STA', label: 'STA', icon: Wifi },
-  { id: 'SCAN', label: 'Scan', icon: ScanSearch },
-  { id: 'SYSTEM', label: 'System', icon: Settings },
+  { id: 'WIFI', label: 'WiFi', icon: Wifi },
 ]
 </script>
 
@@ -72,10 +66,7 @@ const tabs: { id: TabId; label: string; icon: Component }[] = [
         <!-- Tab content -->
         <div class="flex-1 min-h-0 overflow-y-auto p-6">
           <WsTab v-if="activeTab === 'WS'" />
-          <StaTab v-else-if="activeTab === 'STA'" />
-          <ApTab v-else-if="activeTab === 'AP'" />
-          <ScanTab v-else-if="activeTab === 'SCAN'" />
-          <SystemTab v-else-if="activeTab === 'SYSTEM'" />
+          <WifiTab v-else-if="activeTab === 'WIFI'" />
         </div>
       </div>
     </div>
