@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useDeviceStore } from '@/stores/device'
-import { ScanSearch, Loader2, Wifi, Lock, Unlock, Radio, Signal } from 'lucide-vue-next'
+import { ScanSearch, Loader2, Wifi, Lock, Unlock, Radio, Signal, ChevronDown } from 'lucide-vue-next'
 
 const device = useDeviceStore()
 const staForm = ref({ ssid: '', password: '' })
 const apForm = ref({ ssid: '', password: '' })
+const isApExpanded = ref(false)
+const isStaExpanded = ref(false)
 
 // Get signal icon color based on rssi
 function getSignalColor(rssi: number) {
@@ -20,44 +22,10 @@ function getSignalColor(rssi: number) {
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full min-h-0">
     <!-- Left Column: Configs -->
     <div class="flex flex-col gap-3 min-h-0 overflow-y-auto">
-      <!-- STA Configuration -->
-      <div class="rounded-2xl border border-gray-200/80 bg-white shadow-sm flex flex-col shrink-0">
-        <div class="p-4 space-y-3">
-          <div class="flex items-center gap-2">
-            <div
-              class="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600">
-              <Wifi class="w-5 h-5" />
-            </div>
-            <div>
-              <h3 class="text-sm font-bold text-gray-800">STA Configuration</h3>
-              <p class="text-xs text-gray-400 mt-0.5">Kết nối tới Router / WiFi có sẵn</p>
-            </div>
-          </div>
-
-          <div class="space-y-3">
-            <div>
-              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">SSID</label>
-              <input v-model="staForm.ssid" type="text" placeholder="Tên WiFi..."
-                class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-400 focus:bg-white focus:ring-3 focus:ring-blue-100 transition-all font-medium" />
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Mật
-                khẩu</label>
-              <input v-model="staForm.password" type="password" placeholder="Mật khẩu..."
-                class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-800 outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 transition-all font-medium" />
-            </div>
-            <button
-              class="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700 active:bg-blue-800 transition-all flex items-center justify-center gap-2">
-              <Wifi class="w-4 h-4" /> Kết nối
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- AP Configuration -->
       <div class="rounded-2xl border border-gray-200/80 bg-white shadow-sm flex flex-col shrink-0">
         <div class="p-6 space-y-5">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 cursor-pointer select-none" @click="isApExpanded = !isApExpanded">
             <div
               class="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
               <Radio class="w-5 h-5" />
@@ -66,9 +34,11 @@ function getSignalColor(rssi: number) {
               <h3 class="text-sm font-bold text-gray-800">AP Configuration</h3>
               <p class="text-xs text-gray-400 mt-0.5">Cấu hình ESP32 phát WiFi</p>
             </div>
+            <ChevronDown class="ml-auto w-4 h-4 text-gray-400 transition-transform duration-200"
+              :class="isApExpanded ? 'rotate-180' : 'rotate-0'" />
           </div>
 
-          <div class="space-y-3">
+          <div v-show="isApExpanded" class="space-y-3 transition-all duration-200 ease-in-out">
             <div>
               <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Tên WiFi
                 (SSID)</label>
@@ -84,6 +54,42 @@ function getSignalColor(rssi: number) {
             <button
               class="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:bg-emerald-800 transition-all flex items-center justify-center gap-2">
               <Radio class="w-4 h-4" /> Áp dụng
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STA Configuration -->
+      <div class="rounded-2xl border border-gray-200/80 bg-white shadow-sm flex flex-col shrink-0">
+        <div class="p-4 space-y-3">
+          <div class="flex items-center gap-2 cursor-pointer select-none" @click="isStaExpanded = !isStaExpanded">
+            <div
+              class="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-600">
+              <Wifi class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-gray-800">STA Configuration</h3>
+              <p class="text-xs text-gray-400 mt-0.5">Kết nối tới Router / WiFi có sẵn</p>
+            </div>
+            <ChevronDown class="ml-auto w-4 h-4 text-gray-400 transition-transform duration-200"
+              :class="isStaExpanded ? 'rotate-180' : 'rotate-0'" />
+          </div>
+
+          <div v-show="isStaExpanded" class="space-y-3 transition-all duration-200 ease-in-out">
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">SSID</label>
+              <input v-model="staForm.ssid" type="text" placeholder="Tên WiFi..."
+                class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-400 focus:bg-white focus:ring-3 focus:ring-blue-100 transition-all font-medium" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Mật
+                khẩu</label>
+              <input v-model="staForm.password" type="password" placeholder="Mật khẩu..."
+                class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-800 outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 transition-all font-medium" />
+            </div>
+            <button
+              class="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700 active:bg-blue-800 transition-all flex items-center justify-center gap-2">
+              <Wifi class="w-4 h-4" /> Kết nối
             </button>
           </div>
         </div>
@@ -116,7 +122,7 @@ function getSignalColor(rssi: number) {
 
         <div v-for="ap in device.scanResults" :key="ap.bssid"
           class="group flex items-center justify-between p-4 rounded-xl border border-gray-200/80 bg-white hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
-          @click="staForm.ssid = ap.ssid">
+          @click="staForm.ssid = ap.ssid; isStaExpanded = true">
           <div class="flex items-center gap-4 min-w-0">
             <div
               class="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 group-hover:bg-blue-50 group-hover:border-blue-100 transition-colors shrink-0"
