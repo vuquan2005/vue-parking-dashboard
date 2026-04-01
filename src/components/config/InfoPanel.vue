@@ -62,15 +62,21 @@ function formatBytes(bytes?: number) {
 
 const isOnline = computed(() => device.wsStatus === 'connected')
 
-const rssi = computed(() => device.deviceStatus?.rssi ?? 0)
-const rssiPercent = computed(() => rssiToPercent(rssi.value))
+const rssi = computed<number | null>(() =>
+  device.deviceStatus?.rssi != null ? device.deviceStatus.rssi : null,
+)
+const rssiPercent = computed(() =>
+  rssi.value != null ? rssiToPercent(rssi.value) : 0,
+)
 const rssiColorClass = computed(() => {
+  if (rssi.value == null) return 'text-gray-400'
   if (rssi.value >= -50) return 'text-emerald-600'
   if (rssi.value >= -60) return 'text-sky-600'
   if (rssi.value >= -70) return 'text-amber-600'
   return 'text-red-600'
 })
 const rssiBarClass = computed(() => {
+  if (rssi.value == null) return 'bg-gray-300'
   if (rssi.value >= -50) return 'bg-gradient-to-r from-emerald-400 to-emerald-500'
   if (rssi.value >= -60) return 'bg-gradient-to-r from-sky-400 to-sky-500'
   if (rssi.value >= -70) return 'bg-gradient-to-r from-amber-400 to-amber-500'
@@ -136,25 +142,22 @@ const hardwareItems = computed(() => [
             <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Tín hiệu</span>
           </div>
           <span class="text-sm font-bold" :class="rssiColorClass">
-            {{ rssi }} dBm · {{ rssiPercent }}%
+            <template v-if="rssi !== null">
+              {{ rssi }} dBm · {{ rssiPercent }}%
+            </template>
+            <template v-else>---</template>
           </span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all duration-700 ease-out"
-            :class="rssiBarClass"
-            :style="{ width: rssiPercent + '%' }"
-          />
+          <div class="h-full rounded-full transition-all duration-700 ease-out" :class="rssiBarClass"
+            :style="{ width: rssiPercent + '%' }" />
         </div>
       </div>
 
       <!-- Network Info Grid (data-driven) -->
       <div class="grid grid-cols-2 gap-3">
-        <div
-          v-for="item in networkItems"
-          :key="item.label"
-          class="flex items-center gap-3 rounded-xl bg-gray-50/80 p-3.5 border border-gray-100"
-        >
+        <div v-for="item in networkItems" :key="item.label"
+          class="flex items-center gap-3 rounded-xl bg-gray-50/80 p-3.5 border border-gray-100">
           <div class="flex items-center justify-center w-8 h-8 rounded-lg" :class="item.color">
             <component :is="item.icon" class="w-4 h-4" />
           </div>
@@ -169,11 +172,8 @@ const hardwareItems = computed(() => [
 
       <!-- Hardware Info Grid (data-driven) -->
       <div class="grid grid-cols-2 gap-3">
-        <div
-          v-for="item in hardwareItems"
-          :key="item.label"
-          class="flex items-center gap-3 rounded-xl bg-gray-50/80 p-3.5 border border-gray-100"
-        >
+        <div v-for="item in hardwareItems" :key="item.label"
+          class="flex items-center gap-3 rounded-xl bg-gray-50/80 p-3.5 border border-gray-100">
           <div class="flex items-center justify-center w-8 h-8 rounded-lg" :class="item.color">
             <component :is="item.icon" class="w-4 h-4" />
           </div>

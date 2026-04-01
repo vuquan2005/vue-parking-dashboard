@@ -174,6 +174,7 @@ export function send(message: Parameters<typeof Parking.encode>[0]) {
         console.warn('[ws] Cannot send – not connected')
         return
     }
+    console.debug('[ws] Sending message:', message)
     const bytes = Parking.encode(message).finish()
     ws.send(bytes)
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useDeviceStore } from '@/stores/device'
-import { connect, getStoredWsUrl, getDefaultWsUrl } from '@/services/websocket'
+import { connect, getStoredWsUrl, getDefaultWsUrl, sendWifiScan, sendWifiConfig } from '@/services/websocket'
 import { ScanSearch, Loader2, Wifi, Lock, Unlock, Radio, Signal, ChevronDown } from 'lucide-vue-next'
 
 const device = useDeviceStore()
@@ -10,18 +10,75 @@ const apForm = ref({ ssid: '', password: '' })
 const wsUrl = ref(getStoredWsUrl() || getDefaultWsUrl())
 const isApExpanded = ref(false)
 const isStaExpanded = ref(false)
+const apError = ref('')
+const staError = ref('')
 
 function saveWsUrl() {
   localStorage.setItem('ws_url', wsUrl.value)
 }
 
 function onWsConnect() {
+  console.log('Btn WS Connect clicked', { url: wsUrl.value })
   saveWsUrl()
   connect()
 }
 
 function onWsResetUrl() {
+  console.log('Btn WS Reset URL clicked')
   wsUrl.value = getDefaultWsUrl()
+}
+
+function onWifiScan() {
+  console.log('Btn Wifi Scan clicked')
+  sendWifiScan()
+}
+
+function onApApply() {
+  const ssid = apForm.value.ssid.trim()
+  const password = apForm.value.password.trim()
+
+  if (!ssid) {
+    apError.value = 'SSID không được để trống'
+    console.warn('[wifi] AP SSID is required')
+    return
+  }
+
+  apError.value = ''
+  console.log('Btn AP Apply clicked', { ssid })
+  sendWifiConfig({
+    apSsid: ssid,
+    apPassword: password,
+    staSsid: '',
+    staPassword: '',
+  })
+
+  // Optional UI behavior: collapse panel and clear password after send
+  isApExpanded.value = false
+  apForm.value.password = ''
+}
+
+function onStaConnect() {
+  const ssid = staForm.value.ssid.trim()
+  const password = staForm.value.password.trim()
+
+  if (!ssid) {
+    staError.value = 'SSID không được để trống'
+    console.warn('[wifi] STA SSID is required')
+    return
+  }
+
+  staError.value = ''
+  console.log('Btn STA Connect clicked', { ssid })
+  sendWifiConfig({
+    staSsid: ssid,
+    staPassword: password,
+    apSsid: '',
+    apPassword: '',
+  })
+
+  // Optional UI behavior: collapse panel and clear password after send
+  isStaExpanded.value = false
+  staForm.value.password = ''
 }
 
 // Get signal icon color based on rssi
@@ -75,7 +132,8 @@ function getSignalColor(rssi: number) {
               <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">Tên WiFi
                 (SSID)</label>
               <input v-model="apForm.ssid" type="text" placeholder="ESP32_WiFi..."
-                class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm text-gray-800 outline-none focus:border-emerald-400 focus:bg-white focus:ring-3 focus:ring-emerald-100 transition-all font-medium" />
+                :class="['w-full rounded-xl border bg-gray-50/50 px-3 py-2 text-sm text-gray-800 outline-none transition-all font-medium', apError ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border border-gray-200 focus:border-emerald-400 focus:ring-3 focus:ring-emerald-100']" />
+              <p v-if="apError" class="text-xs text-red-500 mt-1 ml-1">{{ apError }}</p>
             </div>
             <div>
               <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Mật
@@ -83,7 +141,7 @@ function getSignalColor(rssi: number) {
               <input v-model="apForm.password" type="password" placeholder="Mật khẩu AP..."
                 class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-800 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 transition-all font-medium" />
             </div>
-            <button
+            <button @click="onApApply"
               class="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 active:bg-emerald-800 transition-all flex items-center justify-center gap-2">
               <Radio class="w-4 h-4" /> Áp dụng
             </button>
@@ -111,7 +169,8 @@ function getSignalColor(rssi: number) {
             <div>
               <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 ml-1">SSID</label>
               <input v-model="staForm.ssid" type="text" placeholder="Tên WiFi..."
-                class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-400 focus:bg-white focus:ring-3 focus:ring-blue-100 transition-all font-medium" />
+                :class="['w-full rounded-xl border bg-gray-50/50 px-3 py-2 text-sm text-gray-800 outline-none transition-all font-medium', staError ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-100' : 'border border-gray-200 focus:border-blue-400 focus:ring-3 focus:ring-blue-100']" />
+              <p v-if="staError" class="text-xs text-red-500 mt-1 ml-1">{{ staError }}</p>
             </div>
             <div>
               <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Mật
@@ -119,7 +178,7 @@ function getSignalColor(rssi: number) {
               <input v-model="staForm.password" type="password" placeholder="Mật khẩu..."
                 class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-800 outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100 transition-all font-medium" />
             </div>
-            <button
+            <button @click="onStaConnect"
               class="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700 active:bg-blue-800 transition-all flex items-center justify-center gap-2">
               <Wifi class="w-4 h-4" /> Kết nối
             </button>
@@ -130,13 +189,13 @@ function getSignalColor(rssi: number) {
 
     <!-- Right column: WiFi Networks -->
     <div class="rounded-2xl border border-gray-200/80 bg-white shadow-sm flex flex-col h-full min-h-0 overflow-hidden">
-      <!-- Header Fixed (Compact) -->
+      <!-- Header Fixed -->
       <div class="p-2 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-10">
         <div>
           <h3 class="text-base font-bold text-gray-800 ml-2">WiFi Networks</h3>
         </div>
-        <button
-          class="flex items-center gap-1.5 rounded-lg bg-gray-800 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-gray-700 active:bg-gray-900 transition-all font-medium">
+        <button @click="onWifiScan" :disabled="device.isScanning"
+          class="flex items-center gap-1.5 rounded-lg bg-gray-800 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-gray-700 active:bg-gray-900 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed">
           <ScanSearch class="w-3.5 h-3.5" />
           <span v-if="device.isScanning" class="flex items-center gap-1">
             <Loader2 class="w-3 h-3 animate-spin" /> Scanning…
