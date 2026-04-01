@@ -61,10 +61,18 @@ function formatBytes(bytes?: number) {
 }
 
 const isOnline = computed(() => device.wsStatus === 'connected')
-
-const rssi = computed<number | null>(() =>
-  device.deviceStatus?.rssi != null ? device.deviceStatus.rssi : null,
+const isStaConnected = computed(() =>
+  device.deviceStatus?.wifiMode === 'STA' ||
+  device.deviceStatus?.wifiMode === 'APSTA',
 )
+
+const rssi = computed<number | null>(() => {
+  if (!isStaConnected.value) return null
+  const value = device.deviceStatus?.rssi
+  // WiFi RSSI is not meaningful when STA is disconnected; the device may report 0
+  if (value == null || value === 0) return null
+  return value
+})
 const rssiPercent = computed(() =>
   rssi.value != null ? rssiToPercent(rssi.value) : 0,
 )
@@ -88,7 +96,10 @@ const mode = computed(() => device.deviceStatus?.wifiMode || 'NULL')
 const modeColor = computed(() => {
   if (mode.value === 'AP') return { bg: 'bg-amber-50/50 border-amber-100', icon: 'bg-amber-100 text-amber-600', text: 'text-amber-700' }
   if (mode.value === 'APSTA') return { bg: 'bg-blue-50/50 border-blue-100', icon: 'bg-blue-100 text-blue-600', text: 'text-blue-700' }
-  return { bg: 'bg-violet-50/50 border-violet-100', icon: 'bg-violet-100 text-violet-600', text: 'text-violet-700' }
+  if (mode.value === 'STA') return { bg: 'bg-violet-50/50 border-violet-100', icon: 'bg-violet-100 text-violet-600', text: 'text-violet-700' }
+  if (mode.value === 'NAN') return { bg: 'bg-teal-50/50 border-teal-100', icon: 'bg-teal-100 text-teal-600', text: 'text-teal-700' }
+  if (mode.value === 'NULL') return { bg: 'bg-gray-50/50 border-gray-100', icon: 'bg-gray-100 text-gray-600', text: 'text-gray-700' }
+  return { bg: 'bg-red-50/50 border-red-100', icon: 'bg-red-100 text-red-600', text: 'text-red-700' }
 })
 
 const isAP = computed(() => mode.value === 'AP' || mode.value === 'APSTA')
@@ -129,7 +140,18 @@ const hardwareItems = computed(() => [
             <template v-else-if="mode === 'APSTA'">
               Phát WiFi & Kết nối router
             </template>
-            <template v-else>Kết nối tới router</template>
+            <template v-else-if="mode === 'STA'">
+              Kết nối tới router
+            </template>
+            <template v-else-if="mode === 'NAN'">
+              Chế độ NAN (neighbor awareness)
+            </template>
+            <template v-else-if="mode === 'NULL'">
+              WiFi chưa cấu hình
+            </template>
+            <template v-else>
+              Trạng thái WiFi không xác định
+            </template>
           </p>
         </div>
       </div>

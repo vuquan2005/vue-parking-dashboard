@@ -43,13 +43,14 @@ export const getDefaultWsUrl = () => {
 
 function handleMessage(event: MessageEvent) {
     if (!(event.data instanceof ArrayBuffer)) {
-        console.warn('[ws] Ignoring non-binary message')
+        console.warn('[ws] Ignoring non-binary message', event.data)
         return
     }
 
     try {
         const bytes = new Uint8Array(event.data)
         const parking = Parking.decode(bytes)
+        console.log('[ws] Received Parking message:', parking)
         dispatch(parking)
     } catch (err) {
         console.error('[ws] Failed to decode Parking message:', err)
