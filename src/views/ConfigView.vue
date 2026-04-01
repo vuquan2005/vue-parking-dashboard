@@ -1,25 +1,11 @@
 <script setup lang="ts">
-import { ref, type Component } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Wifi, Network } from 'lucide-vue-next'
+import { ArrowLeft } from 'lucide-vue-next'
 
 import InfoPanel from '@/components/config/InfoPanel.vue'
-import WsTab from '@/components/config/WsTab.vue'
 import WifiTab from '@/components/config/WifiTab.vue'
 
 const router = useRouter()
-
-// ---------------------------------------------------------------------------
-// Tab management
-// ---------------------------------------------------------------------------
-type TabId = 'WIFI' | 'SYSTEM' | 'WS'
-
-const activeTab = ref<TabId>('WIFI')
-
-const tabs: { id: TabId; label: string; icon: Component }[] = [
-  { id: 'WS', label: 'WebSocket', icon: Network },
-  { id: 'WIFI', label: 'WiFi', icon: Wifi },
-]
 </script>
 
 <template>
@@ -34,39 +20,15 @@ const tabs: { id: TabId; label: string; icon: Component }[] = [
       <h1 class="text-lg font-bold text-gray-800 tracking-tight">Device Configuration</h1>
     </div>
 
-    <!-- Main two-panel layout -->
     <div class="flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- ============================== -->
-      <!-- LEFT: Info Panel               -->
-      <!-- ============================== -->
       <div class="lg:col-span-1 min-h-[300px] lg:min-h-0">
         <InfoPanel />
       </div>
 
-      <!-- ============================== -->
-      <!-- RIGHT: Config Panel            -->
-      <!-- ============================== -->
       <div
         class="lg:col-span-2 flex flex-col min-h-[600px] lg:min-h-0 rounded-xl bg-white shadow-sm border border-gray-200">
-        <!-- Tab bar -->
-        <div
-          class="flex border-b border-gray-200 shrink-0 overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden"
-          style="scrollbar-width: none;">
-          <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="[
-            'flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-colors border-b-2',
-            activeTab === tab.id
-              ? 'border-emerald-500 text-emerald-600'
-              : 'border-transparent text-gray-400 hover:text-gray-600',
-          ]">
-            <component :is="tab.icon" class="w-4 h-4" />
-            {{ tab.label }}
-          </button>
-        </div>
-
-        <!-- Tab content -->
         <div class="flex-1 min-h-0 overflow-y-auto p-6">
-          <WsTab v-if="activeTab === 'WS'" />
-          <WifiTab v-else-if="activeTab === 'WIFI'" />
+          <WifiTab />
         </div>
       </div>
     </div>

@@ -1,13 +1,28 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useDeviceStore } from '@/stores/device'
+import { connect, getStoredWsUrl, getDefaultWsUrl } from '@/services/websocket'
 import { ScanSearch, Loader2, Wifi, Lock, Unlock, Radio, Signal, ChevronDown } from 'lucide-vue-next'
 
 const device = useDeviceStore()
 const staForm = ref({ ssid: '', password: '' })
 const apForm = ref({ ssid: '', password: '' })
+const wsUrl = ref(getStoredWsUrl() || getDefaultWsUrl())
 const isApExpanded = ref(false)
 const isStaExpanded = ref(false)
+
+function saveWsUrl() {
+  localStorage.setItem('ws_url', wsUrl.value)
+}
+
+function onWsConnect() {
+  saveWsUrl()
+  connect()
+}
+
+function onWsResetUrl() {
+  wsUrl.value = getDefaultWsUrl()
+}
 
 // Get signal icon color based on rssi
 function getSignalColor(rssi: number) {
@@ -22,6 +37,23 @@ function getSignalColor(rssi: number) {
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full min-h-0">
     <!-- Left Column: Configs -->
     <div class="flex flex-col gap-3 min-h-0 overflow-y-auto">
+      <!-- WebSocket Configuration -->
+      <div class="rounded-2xl border border-gray-200/80 bg-white shadow-sm flex flex-col shrink-0">
+        <div class="p-5 space-y-3">
+          <h3 class="text-sm font-bold text-gray-800">WebSocket</h3>
+          <input v-model="wsUrl" type="text" placeholder="ws://localhost/ws"
+            class="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm text-gray-800 outline-none focus:border-indigo-400 focus:bg-white focus:ring-3 focus:ring-indigo-100 transition-all font-medium" />
+          <div class="flex gap-2">
+            <button @click="onWsConnect"
+              class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 active:bg-emerald-800 transition-all">Kết
+              nối</button>
+            <button @click="onWsResetUrl"
+              class="flex-1 rounded-xl bg-gray-100 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-200 active:bg-gray-300 transition-all">Mặc
+              định</button>
+          </div>
+        </div>
+      </div>
+
       <!-- AP Configuration -->
       <div class="rounded-2xl border border-gray-200/80 bg-white shadow-sm flex flex-col shrink-0">
         <div class="p-6 space-y-5">
