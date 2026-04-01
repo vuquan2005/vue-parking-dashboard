@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from '@bufbuild/protobuf/wire'
 
-export const protobufPackage = 'iot.parking'
+export const protobufPackage = ''
 
 export interface Parking {
     wifiScanning?: WifiScanning | undefined
@@ -240,7 +240,6 @@ export interface WifiConfig {
     apSsid: string
     /** max_size: 64 (nanopb) */
     apPassword: string
-    channel: number
 }
 
 export interface ParkingStatus {
@@ -1174,7 +1173,7 @@ export const DeviceStatus: MessageFns<DeviceStatus> = {
 }
 
 function createBaseWifiConfig(): WifiConfig {
-    return { staSsid: '', staPassword: '', apSsid: '', apPassword: '', channel: 0 }
+    return { staSsid: '', staPassword: '', apSsid: '', apPassword: '' }
 }
 
 export const WifiConfig: MessageFns<WifiConfig> = {
@@ -1190,9 +1189,6 @@ export const WifiConfig: MessageFns<WifiConfig> = {
         }
         if (message.apPassword !== '') {
             writer.uint32(34).string(message.apPassword)
-        }
-        if (message.channel !== 0) {
-            writer.uint32(40).uint32(message.channel)
         }
         return writer
     },
@@ -1236,14 +1232,6 @@ export const WifiConfig: MessageFns<WifiConfig> = {
                     message.apPassword = reader.string()
                     continue
                 }
-                case 5: {
-                    if (tag !== 40) {
-                        break
-                    }
-
-                    message.channel = reader.uint32()
-                    continue
-                }
             }
             if ((tag & 7) === 4 || tag === 0) {
                 break
@@ -1275,7 +1263,6 @@ export const WifiConfig: MessageFns<WifiConfig> = {
                 : isSet(object.ap_password)
                   ? globalThis.String(object.ap_password)
                   : '',
-            channel: isSet(object.channel) ? globalThis.Number(object.channel) : 0,
         }
     },
 
@@ -1293,9 +1280,6 @@ export const WifiConfig: MessageFns<WifiConfig> = {
         if (message.apPassword !== '') {
             obj.apPassword = message.apPassword
         }
-        if (message.channel !== 0) {
-            obj.channel = Math.round(message.channel)
-        }
         return obj
     },
 
@@ -1308,7 +1292,6 @@ export const WifiConfig: MessageFns<WifiConfig> = {
         message.staPassword = object.staPassword ?? ''
         message.apSsid = object.apSsid ?? ''
         message.apPassword = object.apPassword ?? ''
-        message.channel = object.channel ?? 0
         return message
     },
 }

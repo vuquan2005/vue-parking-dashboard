@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useDeviceStore } from '@/stores/device'
 
 const device = useDeviceStore()
-const apForm = ref({ ssid: '', password: '', channel: 1 })
+const apForm = ref({ ssid: '', password: '' })
 </script>
 
 <template>
@@ -17,10 +17,6 @@ const apForm = ref({ ssid: '', password: '', channel: 1 })
         <div class="flex justify-between">
           <span class="text-gray-500">SSID</span>
           <span class="font-semibold text-gray-800">{{ device.deviceStatus?.apSsid ?? '—' }}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-gray-500">Channel</span>
-          <span class="font-semibold text-gray-800">{{ device.deviceStatus?.channel ?? '—' }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-gray-500">IP</span>
@@ -50,16 +46,6 @@ const apForm = ref({ ssid: '', password: '', channel: 1 })
             v-model="apForm.password"
             type="password"
             placeholder="Enter AP password"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition"
-          />
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 mb-1">Channel</label>
-          <input
-            v-model.number="apForm.channel"
-            type="number"
-            min="1"
-            max="13"
             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition"
           />
         </div>
