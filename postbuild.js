@@ -36,6 +36,7 @@ const headerContent = `#ifndef HTML_H
 #define HTML_H
 
 #include <pgmspace.h>
+#include <stdint.h>
 
 const uint32_t html_len = ${gzipped.length};
 const uint8_t html[] PROGMEM = {
