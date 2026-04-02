@@ -32,12 +32,16 @@ for (let i = 0; i < hexArray.length; i += 16) {
     chunks.push(hexArray.slice(i, i + 16).join(', '))
 }
 
+const buildTimestamp = Math.floor(Date.now() / 1000)
+
 const headerContent = `#ifndef HTML_H
 #define HTML_H
 
 #include <pgmspace.h>
 #include <stdint.h>
 
+const uint32_t build_timestamp = ${buildTimestamp};
+const char ETAG_STRING[] = "\\"${buildTimestamp}\\"";
 const uint32_t html_len = ${gzipped.length};
 const uint8_t html[] PROGMEM = {
     ${chunks.join(',\n    ')}
