@@ -17,7 +17,6 @@ export interface ParkingEvent {
     slotLabel: string
     status: EventStatus
     timestamp: number
-    process?: number
 }
 
 // ---------------------------------------------------------------------------

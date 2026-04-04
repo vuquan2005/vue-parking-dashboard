@@ -110,9 +110,7 @@ message ParkingEvent {
   uint64       timestamp    = 3; // Unix epoch time in milliseconds
   EventType    event_type   = 4;
   bytes        rfid         = 5;
-  uint32       step         = 6; // (process%) 1, 2, 3, 4, 5,...
-  uint32       total_steps  = 7;
-  ParkingSteps current_step = 8;
+  bool         is_done      = 6;
 
   enum EventType {
     UNKNOWN = 0;
@@ -121,16 +119,3 @@ message ParkingEvent {
   }
 }
 
-message ParkingSteps {
-  uint32 step_id = 1;
-  Task   task    = 2;
-
-  enum Task {
-    UNKNOWN    = 0;
-    MOVE_UP    = 1;
-    MOVE_DOWN  = 2;
-    MOVE_LEFT  = 3;
-    MOVE_RIGHT = 4;
-    PICK_UP    = 5;
-  }
-}

@@ -319,10 +319,7 @@ export interface ParkingEvent {
     timestamp: number
     eventType: ParkingEvent_EventType
     rfid: Uint8Array
-    /** (process%) 1, 2, 3, 4, 5,... */
-    step: number
-    totalSteps: number
-    currentStep: ParkingSteps | undefined
+    isDone: boolean
 }
 
 export enum ParkingEvent_EventType {
@@ -1488,9 +1485,7 @@ function createBaseParkingEvent(): ParkingEvent {
         timestamp: 0,
         eventType: 0,
         rfid: new Uint8Array(0),
-        step: 0,
-        totalSteps: 0,
-        currentStep: undefined,
+        isDone: false,
     }
 }
 
@@ -1514,14 +1509,8 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
         if (message.rfid.length !== 0) {
             writer.uint32(42).bytes(message.rfid)
         }
-        if (message.step !== 0) {
-            writer.uint32(48).uint32(message.step)
-        }
-        if (message.totalSteps !== 0) {
-            writer.uint32(56).uint32(message.totalSteps)
-        }
-        if (message.currentStep !== undefined) {
-            ParkingSteps.encode(message.currentStep, writer.uint32(66).fork()).join()
+        if (message.isDone !== false) {
+            writer.uint32(48).bool(message.isDone)
         }
         return writer
     },
@@ -1578,23 +1567,7 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
                         break
                     }
 
-                    message.step = reader.uint32()
-                    continue
-                }
-                case 7: {
-                    if (tag !== 56) {
-                        break
-                    }
-
-                    message.totalSteps = reader.uint32()
-                    continue
-                }
-                case 8: {
-                    if (tag !== 66) {
-                        break
-                    }
-
-                    message.currentStep = ParkingSteps.decode(reader, reader.uint32())
+                    message.isDone = reader.bool()
                     continue
                 }
             }
@@ -1625,17 +1598,11 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
                   ? parkingEvent_EventTypeFromJSON(object.event_type)
                   : 0,
             rfid: isSet(object.rfid) ? bytesFromBase64(object.rfid) : new Uint8Array(0),
-            step: isSet(object.step) ? globalThis.Number(object.step) : 0,
-            totalSteps: isSet(object.totalSteps)
-                ? globalThis.Number(object.totalSteps)
-                : isSet(object.total_steps)
-                  ? globalThis.Number(object.total_steps)
-                  : 0,
-            currentStep: isSet(object.currentStep)
-                ? ParkingSteps.fromJSON(object.currentStep)
-                : isSet(object.current_step)
-                  ? ParkingSteps.fromJSON(object.current_step)
-                  : undefined,
+            isDone: isSet(object.isDone)
+                ? globalThis.Boolean(object.isDone)
+                : isSet(object.is_done)
+                  ? globalThis.Boolean(object.is_done)
+                  : false,
         }
     },
 
@@ -1656,14 +1623,8 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
         if (message.rfid.length !== 0) {
             obj.rfid = base64FromBytes(message.rfid)
         }
-        if (message.step !== 0) {
-            obj.step = Math.round(message.step)
-        }
-        if (message.totalSteps !== 0) {
-            obj.totalSteps = Math.round(message.totalSteps)
-        }
-        if (message.currentStep !== undefined) {
-            obj.currentStep = ParkingSteps.toJSON(message.currentStep)
+        if (message.isDone !== false) {
+            obj.isDone = message.isDone
         }
         return obj
     },
@@ -1678,12 +1639,7 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
         message.timestamp = object.timestamp ?? 0
         message.eventType = object.eventType ?? 0
         message.rfid = object.rfid ?? new Uint8Array(0)
-        message.step = object.step ?? 0
-        message.totalSteps = object.totalSteps ?? 0
-        message.currentStep =
-            object.currentStep !== undefined && object.currentStep !== null
-                ? ParkingSteps.fromPartial(object.currentStep)
-                : undefined
+        message.isDone = object.isDone ?? false
         return message
     },
 }

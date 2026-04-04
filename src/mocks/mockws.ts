@@ -10,7 +10,6 @@ import {
     Parking,
     SlotStatus_Status,
     ParkingEvent_EventType,
-    ParkingSteps_Task,
     ScanResults_WifiAuthMode,
     DeviceStatus_WifiMode,
     type SlotStatus,
@@ -181,7 +180,6 @@ function generateNewEvent() {
     const success = parkingSystem.generateParkingQueue(targetPalletId, plateNumber)
     if (!success) return
 
-    const totalTasks = parkingSystem.getPendingTasks().length
     const slotId = findSlotIdForPallet(targetPalletId)
 
     activeEvent = {
@@ -190,9 +188,7 @@ function generateNewEvent() {
         timestamp: Date.now(),
         eventType,
         rfid,
-        step: 0,
-        totalSteps: totalTasks,
-        currentStep: { stepId: 0, task: ParkingSteps_Task.UNKNOWN },
+        isDone: false,
     }
 
     events.push(activeEvent)
@@ -216,24 +212,10 @@ function tick() {
         const currentTask = pendingTasks[0]!
         parkingSystem.executeNextTask()
 
-        activeEvent.step++
-
-        // Map ParkingTask → ParkingSteps_Task
-        let protoTask: ParkingSteps_Task
-        if (currentTask.type === 'MOVE_PALLET') {
-            protoTask =
-                currentTask.toCol < currentTask.fromCol
-                    ? ParkingSteps_Task.MOVE_LEFT
-                    : ParkingSteps_Task.MOVE_RIGHT
-        } else {
-            protoTask = ParkingSteps_Task.PICK_UP
-        }
-        activeEvent.currentStep = { stepId: activeEvent.step, task: protoTask }
-
         // Check completion
         const isCompleted = parkingSystem.getPendingTasks().length === 0
         if (isCompleted) {
-            activeEvent.step = activeEvent.totalSteps
+            activeEvent.isDone = true
             if (currentTask.type === 'SET_SLOT_DATA') {
                 if (activeEvent.eventType === ParkingEvent_EventType.IN) {
                     palletRfidMap.set(currentTask.palletId, activeEvent.rfid)
@@ -295,9 +277,7 @@ export function initMockWs() {
                 timestamp: Date.now() - Math.floor(Math.random() * 3600000),
                 eventType: ParkingEvent_EventType.IN,
                 rfid: slot.rfid[0] ?? randomBytes(plateRfidNum),
-                step: 5,
-                totalSteps: 5,
-                currentStep: undefined,
+                isDone: true,
             })
         }
     }

@@ -111,16 +111,10 @@ function mapEventType(eventType: ParkingEvent_EventType): EventType {
 }
 
 function deriveEventStatus(event: ProtoParkingEvent): EventStatus {
-    // If step === totalSteps (and both > 0), the event is complete
-    if (event.totalSteps > 0 && event.step >= event.totalSteps) {
+    if (event.isDone) {
         return 'Success'
     }
     return 'Processing'
-}
-
-function deriveProcess(event: ProtoParkingEvent): number | undefined {
-    if (event.totalSteps === 0) return undefined
-    return Math.round((event.step / event.totalSteps) * 100)
 }
 
 export function mapParkingEvent(event: ProtoParkingEvent): ParkingEvent {
@@ -131,7 +125,6 @@ export function mapParkingEvent(event: ProtoParkingEvent): ParkingEvent {
         slotLabel: slotIdToLabel(event.slotId),
         status: deriveEventStatus(event),
         timestamp: Number(event.timestamp),
-        process: deriveProcess(event),
     }
 }
 
