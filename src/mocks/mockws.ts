@@ -83,7 +83,13 @@ const palletRfidMap = new Map<number, Uint8Array>()
 
 /**
  * Converts ParkingSystem grid state into protobuf arrays.
- * rfid array is indexed by pallet_id - 1.
+ *
+ * - palletGrid: 12 entries (slot_id - 1 → pallet_id), preserves grid layout
+ * - slots: 10 entries (pallet_id - 1 → status), only actual pallets
+ * - rfid: 10 entries (pallet_id - 1 → RFID tag)
+ *
+ * NO_PALLET is NOT sent on the wire — the UI derives it from pallet_id = 0
+ * in the palletGrid.
  */
 function syncSlotsFromSystem(): {
     palletGrid: number[]
@@ -91,9 +97,8 @@ function syncSlotsFromSystem(): {
     rfid: Uint8Array[]
 } {
     const resultPallets: number[] = []
-    const resultSlots: ParkingStatus_Status[] = []
 
-    // Find max pallet id to size the rfid array
+    // Find max pallet id to size the per-pallet arrays
     let maxPalletId = 0
     for (let row = 0; row < parkingSystem.totalRows; row++) {
         for (let col = 0; col < parkingSystem.totalCols; col++) {
@@ -102,33 +107,35 @@ function syncSlotsFromSystem(): {
         }
     }
 
-    // Build rfid array indexed by pallet_id - 1
+    // Build per-pallet slots array (index = pallet_id - 1)
+    const resultSlots: ParkingStatus_Status[] = []
+    for (let pid = 1; pid <= maxPalletId; pid++) {
+        const occupancy = parkingSystem.getSlotOccupancy(pid)
+        const taskStatus = parkingSystem.getSlotStatus(pid)
+
+        let status: ParkingStatus_Status
+        if (taskStatus === ParkingSlotStatus.PENDING) {
+            status = ParkingStatus_Status.PENDING
+        } else if (taskStatus === ParkingSlotStatus.PROCESSING) {
+            status = ParkingStatus_Status.PROCESSING
+        } else if (occupancy === 'OCCUPIED') {
+            status = ParkingStatus_Status.OCCUPIED
+        } else {
+            status = ParkingStatus_Status.EMPTY
+        }
+        resultSlots.push(status)
+    }
+
+    // Build per-pallet rfid array (index = pallet_id - 1)
     const resultRfid: Uint8Array[] = []
     for (let i = 0; i < maxPalletId; i++) {
         resultRfid.push(palletRfidMap.get(i + 1) ?? new Uint8Array())
     }
 
+    // Build grid layout (12 entries: slot_id - 1 → pallet_id)
     for (let row = 0; row < parkingSystem.totalRows; row++) {
         for (let col = 0; col < parkingSystem.totalCols; col++) {
-            const palletId = parkingSystem.getSlotPalletId(col, row)
-            const occupancy = parkingSystem.getSlotOccupancy(palletId)
-            const taskStatus = parkingSystem.getSlotStatus(palletId)
-
-            let status: ParkingStatus_Status
-            if (occupancy === 'NO_PALLET') {
-                status = ParkingStatus_Status.NO_PALLET
-            } else if (taskStatus === ParkingSlotStatus.PENDING) {
-                status = ParkingStatus_Status.PENDING
-            } else if (taskStatus === ParkingSlotStatus.PROCESSING) {
-                status = ParkingStatus_Status.PROCESSING
-            } else if (occupancy === 'OCCUPIED') {
-                status = ParkingStatus_Status.OCCUPIED
-            } else {
-                status = ParkingStatus_Status.EMPTY
-            }
-
-            resultPallets.push(palletId)
-            resultSlots.push(status)
+            resultPallets.push(parkingSystem.getSlotPalletId(col, row))
         }
     }
 

@@ -29,11 +29,10 @@ export interface ParkingStatus {
 
 export enum ParkingStatus_Status {
   UNKNOWN = 0,
-  NO_PALLET = 1,
-  EMPTY = 2,
-  OCCUPIED = 3,
-  PROCESSING = 4,
-  PENDING = 5,
+  EMPTY = 1,
+  OCCUPIED = 2,
+  PROCESSING = 3,
+  PENDING = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -43,18 +42,15 @@ export function parkingStatus_StatusFromJSON(object: any): ParkingStatus_Status 
     case "UNKNOWN":
       return ParkingStatus_Status.UNKNOWN;
     case 1:
-    case "NO_PALLET":
-      return ParkingStatus_Status.NO_PALLET;
-    case 2:
     case "EMPTY":
       return ParkingStatus_Status.EMPTY;
-    case 3:
+    case 2:
     case "OCCUPIED":
       return ParkingStatus_Status.OCCUPIED;
-    case 4:
+    case 3:
     case "PROCESSING":
       return ParkingStatus_Status.PROCESSING;
-    case 5:
+    case 4:
     case "PENDING":
       return ParkingStatus_Status.PENDING;
     case -1:
@@ -68,8 +64,6 @@ export function parkingStatus_StatusToJSON(object: ParkingStatus_Status): string
   switch (object) {
     case ParkingStatus_Status.UNKNOWN:
       return "UNKNOWN";
-    case ParkingStatus_Status.NO_PALLET:
-      return "NO_PALLET";
     case ParkingStatus_Status.EMPTY:
       return "EMPTY";
     case ParkingStatus_Status.OCCUPIED:
