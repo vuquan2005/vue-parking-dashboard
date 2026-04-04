@@ -81,14 +81,18 @@ function mapProtoStatusToUI(status: SlotStatus_Status): SlotStatus {
     return key as SlotStatus
 }
 
-export function mapSlotStatus(slot: ProtoSlotStatus, index: number): ParkingSlot {
-    const firstRfid = slot.rfid.length > 0 ? slot.rfid[0] : undefined
+export function mapSlotStatus(
+    slot: ProtoSlotStatus,
+    index: number,
+    rfidArray: Uint8Array[],
+): ParkingSlot {
+    const palletRfid = slot.palletId > 0 ? rfidArray[slot.palletId - 1] : undefined
 
     return {
         slotLabel: slotIdToLabel(index + 1),
         status: mapProtoStatusToUI(slot.status),
         palletId: String(slot.palletId),
-        rfid: firstRfid ? rfidToHex(firstRfid) : undefined,
+        rfid: palletRfid && palletRfid.length > 0 ? rfidToHex(palletRfid) : undefined,
     }
 }
 
@@ -97,7 +101,7 @@ export function mapSlotStatus(slot: ProtoSlotStatus, index: number): ParkingSlot
 // ---------------------------------------------------------------------------
 
 export function mapParkingStatus(status: ProtoParkingStatus): ParkingSlot[] {
-    return status.slots.map((slot, index) => mapSlotStatus(slot, index))
+    return status.slots.map((slot, index) => mapSlotStatus(slot, index, status.rfid))
 }
 
 // ---------------------------------------------------------------------------

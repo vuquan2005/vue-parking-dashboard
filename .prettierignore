@@ -46,3 +46,6 @@ public/
 .nuxt/
 .output/
 .vercel/
+
+# Generated proto files
+src/services/parking.ts

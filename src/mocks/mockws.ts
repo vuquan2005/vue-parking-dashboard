@@ -70,6 +70,7 @@ function sendMockMessage(msg: Parameters<typeof Parking.encode>[0]) {
 
 let parkingSystem: ParkingSystem
 let slots: SlotStatus[] = []
+let rfidArray: Uint8Array[] = []
 let events: ProtoParkingEvent[] = []
 let activeEvent: ProtoParkingEvent | null = null
 
@@ -81,10 +82,26 @@ const palletRfidMap = new Map<number, Uint8Array>()
 // ---------------------------------------------------------------------------
 
 /**
- * Converts ParkingSystem grid state into protobuf SlotStatus[].
+ * Converts ParkingSystem grid state into protobuf SlotStatus[] and rfid[].
+ * rfid array is indexed by pallet_id - 1.
  */
-function syncSlotsFromSystem(): SlotStatus[] {
-    const result: SlotStatus[] = []
+function syncSlotsFromSystem(): { slots: SlotStatus[]; rfid: Uint8Array[] } {
+    const resultSlots: SlotStatus[] = []
+
+    // Find max pallet id to size the rfid array
+    let maxPalletId = 0
+    for (let row = 0; row < parkingSystem.totalRows; row++) {
+        for (let col = 0; col < parkingSystem.totalCols; col++) {
+            const pid = parkingSystem.getSlotPalletId(col, row)
+            if (pid > maxPalletId) maxPalletId = pid
+        }
+    }
+
+    // Build rfid array indexed by pallet_id - 1
+    const resultRfid: Uint8Array[] = []
+    for (let i = 0; i < maxPalletId; i++) {
+        resultRfid.push(palletRfidMap.get(i + 1) ?? new Uint8Array())
+    }
 
     for (let row = 0; row < parkingSystem.totalRows; row++) {
         for (let col = 0; col < parkingSystem.totalCols; col++) {
@@ -105,16 +122,11 @@ function syncSlotsFromSystem(): SlotStatus[] {
                 status = SlotStatus_Status.EMPTY
             }
 
-            const rfid = palletRfidMap.get(palletId)
-            result.push({
-                palletId,
-                status,
-                rfid: rfid ? [rfid] : [],
-            })
+            resultSlots.push({ palletId, status })
         }
     }
 
-    return result
+    return { slots: resultSlots, rfid: resultRfid }
 }
 
 /**
@@ -191,9 +203,8 @@ function generateNewEvent() {
 
     events.push(activeEvent)
     sendMockMessage({ parkingEvent: activeEvent })
-
-    slots = syncSlotsFromSystem()
-    sendMockMessage({ parkingStatus: { slots } })
+    ;({ slots, rfid: rfidArray } = syncSlotsFromSystem())
+    sendMockMessage({ parkingStatus: { slots, rfid: rfidArray } })
 }
 
 /**
@@ -224,9 +235,8 @@ function tick() {
         }
 
         sendMockMessage({ parkingEvent: activeEvent })
-
-        slots = syncSlotsFromSystem()
-        sendMockMessage({ parkingStatus: { slots } })
+        ;({ slots, rfid: rfidArray } = syncSlotsFromSystem())
+        sendMockMessage({ parkingStatus: { slots, rfid: rfidArray } })
 
         if (isCompleted) {
             activeEvent = null
@@ -263,7 +273,7 @@ export function initMockWs() {
     }
 
     // Derive initial slots from ParkingSystem state
-    slots = syncSlotsFromSystem()
+    ;({ slots, rfid: rfidArray } = syncSlotsFromSystem())
     events = []
 
     // Create completed events for initially occupied pallets
@@ -275,14 +285,16 @@ export function initMockWs() {
                 slotId: i + 1,
                 timestamp: Date.now() - Math.floor(Math.random() * 3600000),
                 eventType: ParkingEvent_EventType.IN,
-                rfid: slot.rfid[0] ?? randomBytes(plateRfidNum),
+                rfid:
+                    (slot.palletId > 0 ? rfidArray[slot.palletId - 1] : undefined) ??
+                    randomBytes(plateRfidNum),
                 isDone: true,
             })
         }
     }
 
     // Send initial parking status
-    sendMockMessage({ parkingStatus: { slots } })
+    sendMockMessage({ parkingStatus: { slots, rfid: rfidArray } })
 
     // Send initial events
     for (const event of events) {
