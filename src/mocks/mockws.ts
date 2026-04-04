@@ -89,7 +89,6 @@ function syncSlotsFromSystem(): SlotStatus[] {
     for (let row = 0; row < parkingSystem.totalRows; row++) {
         for (let col = 0; col < parkingSystem.totalCols; col++) {
             const palletId = parkingSystem.getSlotPalletId(col, row)
-            const slotId = row * parkingSystem.totalCols + col + 1
             const occupancy = parkingSystem.getSlotOccupancy(palletId)
             const taskStatus = parkingSystem.getSlotStatus(palletId)
 
@@ -108,7 +107,6 @@ function syncSlotsFromSystem(): SlotStatus[] {
 
             const rfid = palletRfidMap.get(palletId)
             result.push({
-                slotId,
                 palletId,
                 status,
                 rfid: rfid ? [rfid] : [],
@@ -269,11 +267,12 @@ export function initMockWs() {
     events = []
 
     // Create completed events for initially occupied pallets
-    for (const slot of slots) {
+    for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i]!
         if (slot.status === SlotStatus_Status.OCCUPIED) {
             events.push({
                 eventId: eventIdCounter++,
-                slotId: slot.slotId,
+                slotId: i + 1,
                 timestamp: Date.now() - Math.floor(Math.random() * 3600000),
                 eventType: ParkingEvent_EventType.IN,
                 rfid: slot.rfid[0] ?? randomBytes(plateRfidNum),

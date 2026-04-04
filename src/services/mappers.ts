@@ -81,11 +81,11 @@ function mapProtoStatusToUI(status: SlotStatus_Status): SlotStatus {
     return key as SlotStatus
 }
 
-export function mapSlotStatus(slot: ProtoSlotStatus): ParkingSlot {
+export function mapSlotStatus(slot: ProtoSlotStatus, index: number): ParkingSlot {
     const firstRfid = slot.rfid.length > 0 ? slot.rfid[0] : undefined
 
     return {
-        slotLabel: slotIdToLabel(slot.slotId),
+        slotLabel: slotIdToLabel(index + 1),
         status: mapProtoStatusToUI(slot.status),
         palletId: String(slot.palletId),
         rfid: firstRfid ? rfidToHex(firstRfid) : undefined,
@@ -97,7 +97,7 @@ export function mapSlotStatus(slot: ProtoSlotStatus): ParkingSlot {
 // ---------------------------------------------------------------------------
 
 export function mapParkingStatus(status: ProtoParkingStatus): ParkingSlot[] {
-    return status.slots.map(mapSlotStatus)
+    return status.slots.map((slot, index) => mapSlotStatus(slot, index))
 }
 
 // ---------------------------------------------------------------------------

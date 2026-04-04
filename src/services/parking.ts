@@ -2,7 +2,7 @@
 // versions:
 //   protoc-gen-ts_proto  v2.11.5
 //   protoc               v3.21.12
-// source: src/services/parking.proto
+// source: parking.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from '@bufbuild/protobuf/wire'
@@ -248,7 +248,6 @@ export interface ParkingStatus {
 }
 
 export interface SlotStatus {
-    slotId: number
     status: SlotStatus_Status
     /** raw RFID tag bytes (10 bytes each), max_count: 15 (nanopb) */
     rfid: Uint8Array[]
@@ -356,68 +355,6 @@ export function parkingEvent_EventTypeToJSON(object: ParkingEvent_EventType): st
         case ParkingEvent_EventType.OUT:
             return 'OUT'
         case ParkingEvent_EventType.UNRECOGNIZED:
-        default:
-            return 'UNRECOGNIZED'
-    }
-}
-
-export interface ParkingSteps {
-    stepId: number
-    task: ParkingSteps_Task
-}
-
-export enum ParkingSteps_Task {
-    UNKNOWN = 0,
-    MOVE_UP = 1,
-    MOVE_DOWN = 2,
-    MOVE_LEFT = 3,
-    MOVE_RIGHT = 4,
-    PICK_UP = 5,
-    UNRECOGNIZED = -1,
-}
-
-export function parkingSteps_TaskFromJSON(object: any): ParkingSteps_Task {
-    switch (object) {
-        case 0:
-        case 'UNKNOWN':
-            return ParkingSteps_Task.UNKNOWN
-        case 1:
-        case 'MOVE_UP':
-            return ParkingSteps_Task.MOVE_UP
-        case 2:
-        case 'MOVE_DOWN':
-            return ParkingSteps_Task.MOVE_DOWN
-        case 3:
-        case 'MOVE_LEFT':
-            return ParkingSteps_Task.MOVE_LEFT
-        case 4:
-        case 'MOVE_RIGHT':
-            return ParkingSteps_Task.MOVE_RIGHT
-        case 5:
-        case 'PICK_UP':
-            return ParkingSteps_Task.PICK_UP
-        case -1:
-        case 'UNRECOGNIZED':
-        default:
-            return ParkingSteps_Task.UNRECOGNIZED
-    }
-}
-
-export function parkingSteps_TaskToJSON(object: ParkingSteps_Task): string {
-    switch (object) {
-        case ParkingSteps_Task.UNKNOWN:
-            return 'UNKNOWN'
-        case ParkingSteps_Task.MOVE_UP:
-            return 'MOVE_UP'
-        case ParkingSteps_Task.MOVE_DOWN:
-            return 'MOVE_DOWN'
-        case ParkingSteps_Task.MOVE_LEFT:
-            return 'MOVE_LEFT'
-        case ParkingSteps_Task.MOVE_RIGHT:
-            return 'MOVE_RIGHT'
-        case ParkingSteps_Task.PICK_UP:
-            return 'PICK_UP'
-        case ParkingSteps_Task.UNRECOGNIZED:
         default:
             return 'UNRECOGNIZED'
     }
@@ -1361,22 +1298,19 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
 }
 
 function createBaseSlotStatus(): SlotStatus {
-    return { slotId: 0, status: 0, rfid: [], palletId: 0 }
+    return { status: 0, rfid: [], palletId: 0 }
 }
 
 export const SlotStatus: MessageFns<SlotStatus> = {
     encode(message: SlotStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-        if (message.slotId !== 0) {
-            writer.uint32(8).uint32(message.slotId)
-        }
         if (message.status !== 0) {
-            writer.uint32(16).int32(message.status)
+            writer.uint32(8).int32(message.status)
         }
         for (const v of message.rfid) {
-            writer.uint32(26).bytes(v!)
+            writer.uint32(18).bytes(v!)
         }
         if (message.palletId !== 0) {
-            writer.uint32(32).uint32(message.palletId)
+            writer.uint32(24).uint32(message.palletId)
         }
         return writer
     },
@@ -1393,27 +1327,19 @@ export const SlotStatus: MessageFns<SlotStatus> = {
                         break
                     }
 
-                    message.slotId = reader.uint32()
-                    continue
-                }
-                case 2: {
-                    if (tag !== 16) {
-                        break
-                    }
-
                     message.status = reader.int32() as any
                     continue
                 }
-                case 3: {
-                    if (tag !== 26) {
+                case 2: {
+                    if (tag !== 18) {
                         break
                     }
 
                     message.rfid.push(reader.bytes())
                     continue
                 }
-                case 4: {
-                    if (tag !== 32) {
+                case 3: {
+                    if (tag !== 24) {
                         break
                     }
 
@@ -1431,11 +1357,6 @@ export const SlotStatus: MessageFns<SlotStatus> = {
 
     fromJSON(object: any): SlotStatus {
         return {
-            slotId: isSet(object.slotId)
-                ? globalThis.Number(object.slotId)
-                : isSet(object.slot_id)
-                  ? globalThis.Number(object.slot_id)
-                  : 0,
             status: isSet(object.status) ? slotStatus_StatusFromJSON(object.status) : 0,
             rfid: globalThis.Array.isArray(object?.rfid)
                 ? object.rfid.map((e: any) => bytesFromBase64(e))
@@ -1450,9 +1371,6 @@ export const SlotStatus: MessageFns<SlotStatus> = {
 
     toJSON(message: SlotStatus): unknown {
         const obj: any = {}
-        if (message.slotId !== 0) {
-            obj.slotId = Math.round(message.slotId)
-        }
         if (message.status !== 0) {
             obj.status = slotStatus_StatusToJSON(message.status)
         }
@@ -1470,7 +1388,6 @@ export const SlotStatus: MessageFns<SlotStatus> = {
     },
     fromPartial<I extends Exact<DeepPartial<SlotStatus>, I>>(object: I): SlotStatus {
         const message = createBaseSlotStatus()
-        message.slotId = object.slotId ?? 0
         message.status = object.status ?? 0
         message.rfid = object.rfid?.map((e) => e) || []
         message.palletId = object.palletId ?? 0
@@ -1640,89 +1557,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
         message.eventType = object.eventType ?? 0
         message.rfid = object.rfid ?? new Uint8Array(0)
         message.isDone = object.isDone ?? false
-        return message
-    },
-}
-
-function createBaseParkingSteps(): ParkingSteps {
-    return { stepId: 0, task: 0 }
-}
-
-export const ParkingSteps: MessageFns<ParkingSteps> = {
-    encode(
-        message: ParkingSteps,
-        writer: BinaryWriter = new BinaryWriter(),
-    ): BinaryWriter {
-        if (message.stepId !== 0) {
-            writer.uint32(8).uint32(message.stepId)
-        }
-        if (message.task !== 0) {
-            writer.uint32(16).int32(message.task)
-        }
-        return writer
-    },
-
-    decode(input: BinaryReader | Uint8Array, length?: number): ParkingSteps {
-        const reader = input instanceof BinaryReader ? input : new BinaryReader(input)
-        const end = length === undefined ? reader.len : reader.pos + length
-        const message = createBaseParkingSteps()
-        while (reader.pos < end) {
-            const tag = reader.uint32()
-            switch (tag >>> 3) {
-                case 1: {
-                    if (tag !== 8) {
-                        break
-                    }
-
-                    message.stepId = reader.uint32()
-                    continue
-                }
-                case 2: {
-                    if (tag !== 16) {
-                        break
-                    }
-
-                    message.task = reader.int32() as any
-                    continue
-                }
-            }
-            if ((tag & 7) === 4 || tag === 0) {
-                break
-            }
-            reader.skip(tag & 7)
-        }
-        return message
-    },
-
-    fromJSON(object: any): ParkingSteps {
-        return {
-            stepId: isSet(object.stepId)
-                ? globalThis.Number(object.stepId)
-                : isSet(object.step_id)
-                  ? globalThis.Number(object.step_id)
-                  : 0,
-            task: isSet(object.task) ? parkingSteps_TaskFromJSON(object.task) : 0,
-        }
-    },
-
-    toJSON(message: ParkingSteps): unknown {
-        const obj: any = {}
-        if (message.stepId !== 0) {
-            obj.stepId = Math.round(message.stepId)
-        }
-        if (message.task !== 0) {
-            obj.task = parkingSteps_TaskToJSON(message.task)
-        }
-        return obj
-    },
-
-    create<I extends Exact<DeepPartial<ParkingSteps>, I>>(base?: I): ParkingSteps {
-        return ParkingSteps.fromPartial(base ?? ({} as any))
-    },
-    fromPartial<I extends Exact<DeepPartial<ParkingSteps>, I>>(object: I): ParkingSteps {
-        const message = createBaseParkingSteps()
-        message.stepId = object.stepId ?? 0
-        message.task = object.task ?? 0
         return message
     },
 }

@@ -88,10 +88,9 @@ message ParkingStatus {
 }
 
 message SlotStatus {
-  uint32         slot_id = 1;
-  Status         status  = 2;
-  repeated bytes rfid    = 3; // raw RFID tag bytes (10 bytes each), max_count: 15 (nanopb)
-  uint32         pallet_id = 4;
+  Status         status  = 1;
+  repeated bytes rfid    = 2; // raw RFID tag bytes (10 bytes each), max_count: 15 (nanopb)
+  uint32         pallet_id = 3;
 
   enum Status {
     UNKNOWN    = 0;
