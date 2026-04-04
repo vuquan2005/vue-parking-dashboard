@@ -1,9 +1,5 @@
 # parking-dashboard
 
-```sh
-protoc --ts_proto_out=. src/services/parking.proto
-```
-
 ## Project Setup
 
 ```sh
@@ -26,4 +22,10 @@ pnpm build
 
 ```sh
 pnpm lint
+```
+
+### Generate proto
+
+```sh
+protoc --ts_proto_out=. src/services/parking.proto
 ```

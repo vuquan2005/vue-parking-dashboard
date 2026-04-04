@@ -6,7 +6,6 @@
  */
 
 import type {
-    SlotStatus as ProtoSlotStatus,
     ParkingEvent as ProtoParkingEvent,
     ParkingStatus as ProtoParkingStatus,
     ScanResults as ProtoScanResults,
@@ -14,9 +13,9 @@ import type {
     DeviceStatus as ProtoDeviceStatus,
 } from '@/services/parking'
 import {
-    SlotStatus_Status,
+    ParkingStatus_Status,
     ParkingEvent_EventType,
-    slotStatus_StatusToJSON,
+    parkingStatus_StatusToJSON,
     parkingEvent_EventTypeToJSON,
     scanResults_WifiAuthModeToJSON,
     deviceStatus_WifiModeToJSON,
@@ -73,25 +72,24 @@ export function rfidToHex(bytes: Uint8Array): string {
 // Protobuf SlotStatus → UI ParkingSlot
 // ---------------------------------------------------------------------------
 
-function mapProtoStatusToUI(status: SlotStatus_Status): SlotStatus {
-    const key = slotStatus_StatusToJSON(status)
-    // slotStatus_StatusToJSON returns 'UNKNOWN', 'NO_PALLET', 'EMPTY', etc.
-    // Our UI SlotStatus type is exactly these string values (minus UNKNOWN)
+function mapProtoStatusToUI(status: ParkingStatus_Status): SlotStatus {
+    const key = parkingStatus_StatusToJSON(status)
     if (key === 'UNKNOWN' || key === 'UNRECOGNIZED') return 'EMPTY'
     return key as SlotStatus
 }
 
 export function mapSlotStatus(
-    slot: ProtoSlotStatus,
+    status: ParkingStatus_Status,
+    palletId: number,
     index: number,
     rfidArray: Uint8Array[],
 ): ParkingSlot {
-    const palletRfid = slot.palletId > 0 ? rfidArray[slot.palletId - 1] : undefined
+    const palletRfid = palletId > 0 ? rfidArray[palletId - 1] : undefined
 
     return {
         slotLabel: slotIdToLabel(index + 1),
-        status: mapProtoStatusToUI(slot.status),
-        palletId: String(slot.palletId),
+        status: mapProtoStatusToUI(status),
+        palletId: String(palletId),
         rfid: palletRfid && palletRfid.length > 0 ? rfidToHex(palletRfid) : undefined,
     }
 }
@@ -101,7 +99,11 @@ export function mapSlotStatus(
 // ---------------------------------------------------------------------------
 
 export function mapParkingStatus(status: ProtoParkingStatus): ParkingSlot[] {
-    return status.slots.map((slot, index) => mapSlotStatus(slot, index, status.rfid))
+    return status.slots.map((s, index) => {
+        // Find corresponding pallet ID for this slot (fallback to 0 if not set)
+        const pId = status.palletGrid[index] ?? 0
+        return mapSlotStatus(s, pId, index, status.rfid)
+    })
 }
 
 // ---------------------------------------------------------------------------

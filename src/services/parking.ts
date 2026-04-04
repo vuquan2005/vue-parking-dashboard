@@ -19,18 +19,15 @@ export interface Parking {
 }
 
 export interface ParkingStatus {
-  /** max_count: 15 (nanopb) */
-  slots: SlotStatus[];
-  /** RFID per pallet, index = pallet_id - 1, max_count: 15 (nanopb) */
+  /** Grid layout: maps slot_id - 1 to pallet_id (0 if no pallet) */
+  palletGrid: number[];
+  /** Status per slot: maps slot_id - 1 to slot status */
+  slots: ParkingStatus_Status[];
+  /** RFID data: maps pallet_id - 1 to RFID tag */
   rfid: Uint8Array[];
 }
 
-export interface SlotStatus {
-  status: SlotStatus_Status;
-  palletId: number;
-}
-
-export enum SlotStatus_Status {
+export enum ParkingStatus_Status {
   UNKNOWN = 0,
   NO_PALLET = 1,
   EMPTY = 2,
@@ -40,48 +37,48 @@ export enum SlotStatus_Status {
   UNRECOGNIZED = -1,
 }
 
-export function slotStatus_StatusFromJSON(object: any): SlotStatus_Status {
+export function parkingStatus_StatusFromJSON(object: any): ParkingStatus_Status {
   switch (object) {
     case 0:
     case "UNKNOWN":
-      return SlotStatus_Status.UNKNOWN;
+      return ParkingStatus_Status.UNKNOWN;
     case 1:
     case "NO_PALLET":
-      return SlotStatus_Status.NO_PALLET;
+      return ParkingStatus_Status.NO_PALLET;
     case 2:
     case "EMPTY":
-      return SlotStatus_Status.EMPTY;
+      return ParkingStatus_Status.EMPTY;
     case 3:
     case "OCCUPIED":
-      return SlotStatus_Status.OCCUPIED;
+      return ParkingStatus_Status.OCCUPIED;
     case 4:
     case "PROCESSING":
-      return SlotStatus_Status.PROCESSING;
+      return ParkingStatus_Status.PROCESSING;
     case 5:
     case "PENDING":
-      return SlotStatus_Status.PENDING;
+      return ParkingStatus_Status.PENDING;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return SlotStatus_Status.UNRECOGNIZED;
+      return ParkingStatus_Status.UNRECOGNIZED;
   }
 }
 
-export function slotStatus_StatusToJSON(object: SlotStatus_Status): string {
+export function parkingStatus_StatusToJSON(object: ParkingStatus_Status): string {
   switch (object) {
-    case SlotStatus_Status.UNKNOWN:
+    case ParkingStatus_Status.UNKNOWN:
       return "UNKNOWN";
-    case SlotStatus_Status.NO_PALLET:
+    case ParkingStatus_Status.NO_PALLET:
       return "NO_PALLET";
-    case SlotStatus_Status.EMPTY:
+    case ParkingStatus_Status.EMPTY:
       return "EMPTY";
-    case SlotStatus_Status.OCCUPIED:
+    case ParkingStatus_Status.OCCUPIED:
       return "OCCUPIED";
-    case SlotStatus_Status.PROCESSING:
+    case ParkingStatus_Status.PROCESSING:
       return "PROCESSING";
-    case SlotStatus_Status.PENDING:
+    case ParkingStatus_Status.PENDING:
       return "PENDING";
-    case SlotStatus_Status.UNRECOGNIZED:
+    case ParkingStatus_Status.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -545,16 +542,23 @@ export const Parking: MessageFns<Parking> = {
 };
 
 function createBaseParkingStatus(): ParkingStatus {
-  return { slots: [], rfid: [] };
+  return { palletGrid: [], slots: [], rfid: [] };
 }
 
 export const ParkingStatus: MessageFns<ParkingStatus> = {
   encode(message: ParkingStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.slots) {
-      SlotStatus.encode(v!, writer.uint32(10).fork()).join();
+    writer.uint32(10).fork();
+    for (const v of message.palletGrid) {
+      writer.uint32(v);
     }
+    writer.join();
+    writer.uint32(18).fork();
+    for (const v of message.slots) {
+      writer.int32(v);
+    }
+    writer.join();
     for (const v of message.rfid) {
-      writer.uint32(18).bytes(v!);
+      writer.uint32(26).bytes(v!);
     }
     return writer;
   },
@@ -567,15 +571,43 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 10) {
-            break;
+          if (tag === 8) {
+            message.palletGrid.push(reader.uint32());
+
+            continue;
           }
 
-          message.slots.push(SlotStatus.decode(reader, reader.uint32()));
-          continue;
+          if (tag === 10) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.palletGrid.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
         }
         case 2: {
-          if (tag !== 18) {
+          if (tag === 16) {
+            message.slots.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.slots.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 3: {
+          if (tag !== 26) {
             break;
           }
 
@@ -593,15 +625,25 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
 
   fromJSON(object: any): ParkingStatus {
     return {
-      slots: globalThis.Array.isArray(object?.slots) ? object.slots.map((e: any) => SlotStatus.fromJSON(e)) : [],
+      palletGrid: globalThis.Array.isArray(object?.palletGrid)
+        ? object.palletGrid.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.pallet_grid)
+        ? object.pallet_grid.map((e: any) => globalThis.Number(e))
+        : [],
+      slots: globalThis.Array.isArray(object?.slots)
+        ? object.slots.map((e: any) => parkingStatus_StatusFromJSON(e))
+        : [],
       rfid: globalThis.Array.isArray(object?.rfid) ? object.rfid.map((e: any) => bytesFromBase64(e)) : [],
     };
   },
 
   toJSON(message: ParkingStatus): unknown {
     const obj: any = {};
+    if (message.palletGrid?.length) {
+      obj.palletGrid = message.palletGrid.map((e) => Math.round(e));
+    }
     if (message.slots?.length) {
-      obj.slots = message.slots.map((e) => SlotStatus.toJSON(e));
+      obj.slots = message.slots.map((e) => parkingStatus_StatusToJSON(e));
     }
     if (message.rfid?.length) {
       obj.rfid = message.rfid.map((e) => base64FromBytes(e));
@@ -614,88 +656,9 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
   },
   fromPartial<I extends Exact<DeepPartial<ParkingStatus>, I>>(object: I): ParkingStatus {
     const message = createBaseParkingStatus();
-    message.slots = object.slots?.map((e) => SlotStatus.fromPartial(e)) || [];
+    message.palletGrid = object.palletGrid?.map((e) => e) || [];
+    message.slots = object.slots?.map((e) => e) || [];
     message.rfid = object.rfid?.map((e) => e) || [];
-    return message;
-  },
-};
-
-function createBaseSlotStatus(): SlotStatus {
-  return { status: 0, palletId: 0 };
-}
-
-export const SlotStatus: MessageFns<SlotStatus> = {
-  encode(message: SlotStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.status !== 0) {
-      writer.uint32(8).int32(message.status);
-    }
-    if (message.palletId !== 0) {
-      writer.uint32(16).uint32(message.palletId);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): SlotStatus {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSlotStatus();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.status = reader.int32() as any;
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.palletId = reader.uint32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SlotStatus {
-    return {
-      status: isSet(object.status) ? slotStatus_StatusFromJSON(object.status) : 0,
-      palletId: isSet(object.palletId)
-        ? globalThis.Number(object.palletId)
-        : isSet(object.pallet_id)
-        ? globalThis.Number(object.pallet_id)
-        : 0,
-    };
-  },
-
-  toJSON(message: SlotStatus): unknown {
-    const obj: any = {};
-    if (message.status !== 0) {
-      obj.status = slotStatus_StatusToJSON(message.status);
-    }
-    if (message.palletId !== 0) {
-      obj.palletId = Math.round(message.palletId);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<SlotStatus>, I>>(base?: I): SlotStatus {
-    return SlotStatus.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<SlotStatus>, I>>(object: I): SlotStatus {
-    const message = createBaseSlotStatus();
-    message.status = object.status ?? 0;
-    message.palletId = object.palletId ?? 0;
     return message;
   },
 };
