@@ -4,7 +4,6 @@ export interface ParkingSlot {
     slotLabel: string
     status: SlotStatus
     palletId: string
-    rfid?: string
 }
 
 export type EventType = 'IN' | 'OUT'
@@ -13,7 +12,6 @@ export type EventStatus = 'Success' | 'Processing'
 export interface ParkingEvent {
     eventId: number
     type: EventType
-    rfid: string
     slotLabel: string
     status: EventStatus
     timestamp: number

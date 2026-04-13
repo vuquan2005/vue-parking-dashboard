@@ -51,7 +51,6 @@ function randomPlateNumber(): string {
 }
 
 let eventIdCounter = 1
-const plateRfidNum = 6
 
 // ---------------------------------------------------------------------------
 // Encode → decode → dispatch  (full pipeline)
@@ -70,12 +69,8 @@ function sendMockMessage(msg: Parameters<typeof Parking.encode>[0]) {
 let parkingSystem: ParkingSystem
 let palletGrid: number[] = []
 let slots: ParkingStatus_Status[] = []
-let rfidArray: Uint8Array[] = []
 let events: ProtoParkingEvent[] = []
 let activeEvent: ProtoParkingEvent | null = null
-
-/** Maps palletId → rfid bytes for occupied pallets */
-const palletRfidMap = new Map<number, Uint8Array>()
 
 // ---------------------------------------------------------------------------
 // ParkingSystem → Protobuf mapping
@@ -86,7 +81,6 @@ const palletRfidMap = new Map<number, Uint8Array>()
  *
  * - palletGrid: 12 entries (slot_id - 1 → pallet_id), preserves grid layout
  * - slots: 10 entries (pallet_id - 1 → status), only actual pallets
- * - rfid: 10 entries (pallet_id - 1 → RFID tag)
  *
  * NO_PALLET is NOT sent on the wire — the UI derives it from pallet_id = 0
  * in the palletGrid.
@@ -94,7 +88,6 @@ const palletRfidMap = new Map<number, Uint8Array>()
 function syncSlotsFromSystem(): {
     palletGrid: number[]
     slots: ParkingStatus_Status[]
-    rfid: Uint8Array[]
 } {
     const resultPallets: number[] = []
 
@@ -126,12 +119,6 @@ function syncSlotsFromSystem(): {
         resultSlots.push(status)
     }
 
-    // Build per-pallet rfid array (index = pallet_id - 1)
-    const resultRfid: Uint8Array[] = []
-    for (let i = 0; i < maxPalletId; i++) {
-        resultRfid.push(palletRfidMap.get(i + 1) ?? new Uint8Array())
-    }
-
     // Build grid layout (12 entries: slot_id - 1 → pallet_id)
     for (let row = 0; row < parkingSystem.totalRows; row++) {
         for (let col = 0; col < parkingSystem.totalCols; col++) {
@@ -139,7 +126,7 @@ function syncSlotsFromSystem(): {
         }
     }
 
-    return { palletGrid: resultPallets, slots: resultSlots, rfid: resultRfid }
+    return { palletGrid: resultPallets, slots: resultSlots }
 }
 
 /**
@@ -181,7 +168,6 @@ function generateNewEvent() {
     let targetPalletId: number | null = null
     let eventType: ParkingEvent_EventType = ParkingEvent_EventType.IN
     let plateNumber = ''
-    let rfid: Uint8Array = new Uint8Array()
 
     const random = Math.random()
 
@@ -189,13 +175,11 @@ function generateNewEvent() {
         targetPalletId = emptyPallets[Math.floor(Math.random() * emptyPallets.length)]!
         eventType = ParkingEvent_EventType.IN
         plateNumber = randomPlateNumber()
-        rfid = randomBytes(plateRfidNum)
     } else if (occupiedPallets.length > 0 && random > 0.5) {
         targetPalletId =
             occupiedPallets[Math.floor(Math.random() * occupiedPallets.length)]!
         eventType = ParkingEvent_EventType.OUT
         plateNumber = ''
-        rfid = palletRfidMap.get(targetPalletId) ?? randomBytes(plateRfidNum)
     }
 
     if (targetPalletId === null) return
@@ -210,14 +194,13 @@ function generateNewEvent() {
         slotId,
         timestamp: Date.now(),
         eventType,
-        rfid,
         isDone: false,
     }
 
     events.push(activeEvent)
     sendMockMessage({ parkingEvent: activeEvent })
-    ;({ palletGrid, slots, rfid: rfidArray } = syncSlotsFromSystem())
-    sendMockMessage({ parkingStatus: { palletGrid, slots, rfid: rfidArray } })
+    ;({ palletGrid, slots } = syncSlotsFromSystem())
+    sendMockMessage({ parkingStatus: { palletGrid, slots } })
 }
 
 /**
@@ -238,18 +221,11 @@ function tick() {
         const isCompleted = parkingSystem.getPendingTasks().length === 0
         if (isCompleted) {
             activeEvent.isDone = true
-            if (currentTask.type === 'SET_SLOT_DATA') {
-                if (activeEvent.eventType === ParkingEvent_EventType.IN) {
-                    palletRfidMap.set(currentTask.palletId, activeEvent.rfid)
-                } else {
-                    palletRfidMap.delete(currentTask.palletId)
-                }
-            }
         }
 
         sendMockMessage({ parkingEvent: activeEvent })
-        ;({ palletGrid, slots, rfid: rfidArray } = syncSlotsFromSystem())
-        sendMockMessage({ parkingStatus: { palletGrid, slots, rfid: rfidArray } })
+        ;({ palletGrid, slots } = syncSlotsFromSystem())
+        sendMockMessage({ parkingStatus: { palletGrid, slots } })
 
         if (isCompleted) {
             activeEvent = null
@@ -281,12 +257,11 @@ export function initMockWs() {
         const pid = parkingSystem.getSlotPalletId(col, parkingSystem.totalRows - 1)
         if (pid > 0 && Math.random() < 0.5) {
             parkingSystem.setSlotData(pid, randomPlateNumber())
-            palletRfidMap.set(pid, randomBytes(plateRfidNum))
         }
     }
 
     // Derive initial slots from ParkingSystem state
-    ;({ palletGrid, slots, rfid: rfidArray } = syncSlotsFromSystem())
+    ;({ palletGrid, slots } = syncSlotsFromSystem())
     events = []
 
     // Create completed events for initially occupied pallets
@@ -299,16 +274,13 @@ export function initMockWs() {
                 slotId: i + 1,
                 timestamp: Date.now() - Math.floor(Math.random() * 3600000),
                 eventType: ParkingEvent_EventType.IN,
-                rfid:
-                    (palletId > 0 ? rfidArray[palletId - 1] : undefined) ??
-                    randomBytes(plateRfidNum),
                 isDone: true,
             })
         }
     }
 
     // Send initial parking status
-    sendMockMessage({ parkingStatus: { palletGrid, slots, rfid: rfidArray } })
+    sendMockMessage({ parkingStatus: { palletGrid, slots } })
 
     // Send initial events
     for (const event of events) {

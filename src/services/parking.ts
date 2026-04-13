@@ -21,10 +21,8 @@ export interface Parking {
 export interface ParkingStatus {
   /** Grid layout: maps slot_id - 1 to pallet_id (0 if no pallet) */
   palletGrid: number[];
-  /** Status per slot: maps slot_id - 1 to slot status */
+  /** Status per pallet: maps pallet_id - 1 to pallet status */
   slots: ParkingStatus_Status[];
-  /** RFID data: maps pallet_id - 1 to RFID tag */
-  rfid: Uint8Array[];
 }
 
 export enum ParkingStatus_Status {
@@ -84,7 +82,6 @@ export interface ParkingEvent {
   /** Unix epoch time in milliseconds */
   timestamp: number;
   eventType: ParkingEvent_EventType;
-  rfid: Uint8Array;
   isDone: boolean;
 }
 
@@ -536,7 +533,7 @@ export const Parking: MessageFns<Parking> = {
 };
 
 function createBaseParkingStatus(): ParkingStatus {
-  return { palletGrid: [], slots: [], rfid: [] };
+  return { palletGrid: [], slots: [] };
 }
 
 export const ParkingStatus: MessageFns<ParkingStatus> = {
@@ -551,9 +548,6 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
       writer.int32(v);
     }
     writer.join();
-    for (const v of message.rfid) {
-      writer.uint32(26).bytes(v!);
-    }
     return writer;
   },
 
@@ -600,14 +594,6 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
 
           break;
         }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.rfid.push(reader.bytes());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -627,7 +613,6 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
       slots: globalThis.Array.isArray(object?.slots)
         ? object.slots.map((e: any) => parkingStatus_StatusFromJSON(e))
         : [],
-      rfid: globalThis.Array.isArray(object?.rfid) ? object.rfid.map((e: any) => bytesFromBase64(e)) : [],
     };
   },
 
@@ -639,9 +624,6 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
     if (message.slots?.length) {
       obj.slots = message.slots.map((e) => parkingStatus_StatusToJSON(e));
     }
-    if (message.rfid?.length) {
-      obj.rfid = message.rfid.map((e) => base64FromBytes(e));
-    }
     return obj;
   },
 
@@ -652,13 +634,12 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
     const message = createBaseParkingStatus();
     message.palletGrid = object.palletGrid?.map((e) => e) || [];
     message.slots = object.slots?.map((e) => e) || [];
-    message.rfid = object.rfid?.map((e) => e) || [];
     return message;
   },
 };
 
 function createBaseParkingEvent(): ParkingEvent {
-  return { eventId: 0, slotId: 0, timestamp: 0, eventType: 0, rfid: new Uint8Array(0), isDone: false };
+  return { eventId: 0, slotId: 0, timestamp: 0, eventType: 0, isDone: false };
 }
 
 export const ParkingEvent: MessageFns<ParkingEvent> = {
@@ -674,9 +655,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
     }
     if (message.eventType !== 0) {
       writer.uint32(32).int32(message.eventType);
-    }
-    if (message.rfid.length !== 0) {
-      writer.uint32(42).bytes(message.rfid);
     }
     if (message.isDone !== false) {
       writer.uint32(48).bool(message.isDone);
@@ -723,14 +701,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
           message.eventType = reader.int32() as any;
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.rfid = reader.bytes();
-          continue;
-        }
         case 6: {
           if (tag !== 48) {
             break;
@@ -766,7 +736,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
         : isSet(object.event_type)
         ? parkingEvent_EventTypeFromJSON(object.event_type)
         : 0,
-      rfid: isSet(object.rfid) ? bytesFromBase64(object.rfid) : new Uint8Array(0),
       isDone: isSet(object.isDone)
         ? globalThis.Boolean(object.isDone)
         : isSet(object.is_done)
@@ -789,9 +758,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
     if (message.eventType !== 0) {
       obj.eventType = parkingEvent_EventTypeToJSON(message.eventType);
     }
-    if (message.rfid.length !== 0) {
-      obj.rfid = base64FromBytes(message.rfid);
-    }
     if (message.isDone !== false) {
       obj.isDone = message.isDone;
     }
@@ -807,7 +773,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
     message.slotId = object.slotId ?? 0;
     message.timestamp = object.timestamp ?? 0;
     message.eventType = object.eventType ?? 0;
-    message.rfid = object.rfid ?? new Uint8Array(0);
     message.isDone = object.isDone ?? false;
     return message;
   },

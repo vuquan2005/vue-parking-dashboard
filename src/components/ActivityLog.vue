@@ -79,9 +79,7 @@ onBeforeUnmount(() => {
         <!-- Details -->
         <div class="space-y-1 text-sm text-gray-600">
           <p class="flex items-center">
-            <span class="font-semibold text-gray-500">#</span>
-            <span class="ml-1">{{ event.rfid }}</span>
-            <span class="ml-15 text-gray-400 flex items-center gap-1">
+            <span class="text-gray-400 flex items-center gap-1">
               <Car class="w-3.5 h-3.5" />
               Vị trí
             </span>

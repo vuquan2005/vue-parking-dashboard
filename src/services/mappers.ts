@@ -53,15 +53,15 @@ export function slotIdToLabel(slotId: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// RFID byte array → hex string
+// Byte array → hex string
 // ---------------------------------------------------------------------------
 
 /**
- * Convert a Uint8Array of RFID bytes into a colon-delimited hex string.
+ * Convert a Uint8Array of bytes into a colon-delimited hex string.
  *
  * Example: Uint8Array([0xDE, 0xAD, 0xBE, 0xEF]) → "DE:AD:BE:EF"
  */
-export function rfidToHex(bytes: Uint8Array): string {
+export function bytesToHex(bytes: Uint8Array): string {
     if (bytes.length === 0) return ''
     return Array.from(bytes)
         .map((b) => b.toString(16).padStart(2, '0').toUpperCase())
@@ -93,31 +93,27 @@ function mapProtoStatusToUI(status: ParkingStatus_Status): SlotStatus {
  * Map a single grid position to a UI ParkingSlot.
  *
  * - If palletId is 0, the slot has no pallet → status = NO_PALLET.
- * - Otherwise, look up status from slots[palletId - 1] and rfid[palletId - 1].
+ * - Otherwise, look up status from slots[palletId - 1].
  */
 export function mapSlotStatus(
     palletId: number,
     index: number,
     slotsArray: ParkingStatus_Status[],
-    rfidArray: Uint8Array[],
 ): ParkingSlot {
     if (palletId === 0) {
         return {
             slotLabel: slotIdToLabel(index + 1),
             status: 'NO_PALLET',
             palletId: '0',
-            rfid: undefined,
         }
     }
 
     const palletStatus = slotsArray[palletId - 1] ?? ParkingStatus_Status.UNKNOWN
-    const palletRfid = rfidArray[palletId - 1]
 
     return {
         slotLabel: slotIdToLabel(index + 1),
         status: mapProtoStatusToUI(palletStatus),
         palletId: String(palletId),
-        rfid: palletRfid && palletRfid.length > 0 ? rfidToHex(palletRfid) : undefined,
     }
 }
 
@@ -127,7 +123,7 @@ export function mapSlotStatus(
 
 export function mapParkingStatus(status: ProtoParkingStatus): ParkingSlot[] {
     return status.palletGrid.map((palletId, index) =>
-        mapSlotStatus(palletId, index, status.slots, status.rfid),
+        mapSlotStatus(palletId, index, status.slots),
     )
 }
 
@@ -152,7 +148,6 @@ export function mapParkingEvent(event: ProtoParkingEvent): ParkingEvent {
     return {
         eventId: event.eventId,
         type: mapEventType(event.eventType),
-        rfid: rfidToHex(event.rfid),
         slotLabel: slotIdToLabel(event.slotId),
         status: deriveEventStatus(event),
         timestamp: Number(event.timestamp),
@@ -174,7 +169,7 @@ function mapWifiAuthMode(proto: ProtoAP['encryption']): WifiAuthMode {
 function mapAccessPoint(ap: ProtoAP): AccessPoint {
     return {
         ssid: ap.ssid,
-        bssid: rfidToHex(ap.bssid), // reuse hex formatter for MAC bytes
+        bssid: bytesToHex(ap.bssid), // reuse hex formatter for MAC bytes
         rssi: ap.rssi,
         channel: ap.channel,
         encryption: mapWifiAuthMode(ap.encryption),

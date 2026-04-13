@@ -79,12 +79,9 @@ function statusBadgeClass(status: string) {
 
         <div class="flex flex-col items-center justify-center w-full mt-1.5 h-6">
           <span
-            class="rounded px-2 py-0.5 font-bold tracking-wider uppercase ring-1 flex items-center justify-center text-center max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
-            :class="[
-              statusBadgeClass(slot.status),
-              slot.rfid ? 'text-xs rounded' : 'text-[10px] rounded-full',
-            ]">
-            {{ slot.rfid || statusLabel(slot.status) }}
+            class="rounded px-2 py-0.5 font-bold tracking-wider uppercase ring-1 flex items-center justify-center text-center max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[10px] rounded-full"
+            :class="statusBadgeClass(slot.status)">
+            {{ statusLabel(slot.status) }}
           </span>
         </div>
       </div>
