@@ -37,7 +37,9 @@ import type {
 // Slot ID ↔ Label mapping
 // ---------------------------------------------------------------------------
 
-const COLUMNS = 4 // A1..A4, B1..B4, etc.
+const COLUMNS = 4
+const PALLET_FIRST_ROW_COLUMNS = COLUMNS // A1..A4
+const PALLET_OTHER_ROW_COLUMNS = COLUMNS - 1 // B1..B3, C1..C3, ...
 
 /**
  * Convert a numeric slot_id (1-based) into a label like "A1", "B3", etc.
@@ -49,6 +51,26 @@ export function slotIdToLabel(slotId: number): string {
     const rowIndex = Math.floor((slotId - 1) / COLUMNS)
     const colIndex = ((slotId - 1) % COLUMNS) + 1
     const rowLetter = String.fromCharCode(65 + rowIndex) // A=65
+    return `${rowLetter}${colIndex}`
+}
+
+/**
+ * Convert pallet_id (1-based) into label with uneven row capacities:
+ * - Row A has 4 positions (A1..A4)
+ * - Following rows have 3 positions each (B1..B3, C1..C3, ...)
+ */
+export function palletIdToLabel(palletId: number): string {
+    if (palletId <= 0) return ''
+
+    if (palletId <= PALLET_FIRST_ROW_COLUMNS) {
+        return `A${palletId}`
+    }
+
+    const remaining = palletId - PALLET_FIRST_ROW_COLUMNS - 1
+    const rowOffset = Math.floor(remaining / PALLET_OTHER_ROW_COLUMNS) + 1
+    const colIndex = (remaining % PALLET_OTHER_ROW_COLUMNS) + 1
+    const rowLetter = String.fromCharCode(65 + rowOffset)
+
     return `${rowLetter}${colIndex}`
 }
 
@@ -102,7 +124,7 @@ export function mapSlotStatus(
 ): ParkingSlot {
     if (palletId === 0) {
         return {
-            slotLabel: slotIdToLabel(index + 1),
+            slotLabel: '',
             status: 'NO_PALLET',
             palletId: '0',
         }
@@ -111,7 +133,7 @@ export function mapSlotStatus(
     const palletStatus = slotsArray[palletId - 1] ?? ParkingStatus_Status.UNKNOWN
 
     return {
-        slotLabel: slotIdToLabel(index + 1),
+        slotLabel: palletIdToLabel(palletId),
         status: mapProtoStatusToUI(palletStatus),
         palletId: String(palletId),
     }

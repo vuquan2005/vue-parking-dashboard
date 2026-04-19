@@ -38,7 +38,7 @@ function statusLabel(status: string) {
     case 'PENDING':
       return 'ĐANG CHỜ'
     case 'NO_PALLET':
-      return '---'
+      return ''
     case 'EMPTY':
       return 'TRỐNG'
     default:
@@ -77,7 +77,7 @@ function statusBadgeClass(status: string) {
         <!-- ID label -->
         <span class="text-lg font-bold leading-none">{{ slot.slotLabel }}</span>
 
-        <div class="flex flex-col items-center justify-center w-full mt-1.5 h-6">
+        <div v-if="slot.status !== 'NO_PALLET'" class="flex flex-col items-center justify-center w-full mt-1.5 h-6">
           <span
             class="rounded px-2 py-0.5 font-bold tracking-wider uppercase ring-1 flex items-center justify-center text-center max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[10px] rounded-full"
             :class="statusBadgeClass(slot.status)">
