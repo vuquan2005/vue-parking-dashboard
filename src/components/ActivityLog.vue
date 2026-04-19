@@ -5,7 +5,14 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { formatUnixTimestamp } from '@/utils/time'
 
 const store = useParkingStore()
-const eventsNewestFirst = computed(() => [...store.events].reverse())
+const eventsNewestFirst = computed(() => {
+  const labelFilter = store.selectedSlotLabel
+  const events = labelFilter
+    ? store.events.filter((event) => event.slotLabel === labelFilter)
+    : store.events
+
+  return [...events].reverse()
+})
 const highlightedEventId = ref<number | null>(null)
 const latestEventId = ref<number | null>(null)
 let highlightTimer: ReturnType<typeof setTimeout> | null = null
@@ -51,16 +58,26 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col">
-    <h2 class="mb-5 shrink-0 flex items-center gap-2 text-base font-semibold text-gray-700">
-      <Clock class="w-5 h-5 text-gray-500" />
-      Lịch sử ra vào
-    </h2>
+    <div class="mb-5 shrink-0 flex items-center justify-between gap-3">
+      <h2 class="flex items-center gap-2 text-base font-semibold text-gray-700">
+        <Clock class="w-5 h-5 text-gray-500" />
+        Lịch sử ra vào
+      </h2>
 
-    <TransitionGroup name="log-list" tag="div" class="flex flex-col gap-3 overflow-y-auto pr-2 min-h-0 flex-1">
+      <button v-if="store.selectedSlotLabel" type="button"
+        class="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+        @click="store.toggleSlotLabelFilter(store.selectedSlotLabel)">
+        {{ store.selectedSlotLabel }} x
+      </button>
+    </div>
+
+    <TransitionGroup name="log-list" tag="div"
+      class="flex flex-col gap-3 overflow-y-auto overflow-x-hidden pr-2 min-h-0 flex-1">
       <div v-for="event in eventsNewestFirst" :key="event.eventId" :class="[
-        'rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-shadow hover:shadow-sm',
+        'cursor-pointer rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-shadow hover:shadow-sm',
         event.eventId === highlightedEventId ? 'log-item-highlight' : '',
-      ]">
+        store.selectedSlotLabel === event.slotLabel ? 'border-indigo-300 bg-indigo-50/40 shadow-sm' : '',
+      ]" @click="store.toggleSlotLabelFilter(event.slotLabel)">
         <!-- Header row: badge + timestamp -->
         <div class="mb-2 flex items-center justify-between">
           <span :class="[
@@ -73,7 +90,7 @@ onBeforeUnmount(() => {
           </span>
           <span class="text-xs text-gray-600">{{
             formatUnixTimestamp(event.timestamp)
-          }}</span>
+            }}</span>
         </div>
 
         <!-- Details -->

@@ -22,10 +22,21 @@ function slotClasses(status: string) {
   }
 }
 
-function filterClasses(status: string) {
+function filterClasses(status: string, slotLabel: string) {
   const filter = store.selectedFilter
-  if (!filter) return ''
-  if (status === filter) return 'scale-[1.005]'
+  const labelFilter = store.selectedSlotLabel
+
+  if (!filter && !labelFilter) {
+    return ''
+  }
+
+  const matchesStatus = !filter || status === filter
+  const matchesLabel = !labelFilter || slotLabel === labelFilter
+
+  if (matchesStatus && matchesLabel) {
+    return 'scale-[1.005]'
+  }
+
   return 'opacity-30 blur-[1.1px] scale-98'
 }
 
@@ -71,9 +82,10 @@ function statusBadgeClass(status: string) {
       Sơ đồ bãi đỗ
     </h2>
     <transition-group name="pallet" tag="div"
-      class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 min-h-0 flex-1 relative">
+      class="grid grid-cols-4 gap-3 overflow-y-hidden overflow-x-hidden pr-1 min-h-0 flex-1 relative">
       <div v-for="slot in store.slots" :key="slot.palletId"
-        :class="[slotClasses(slot.status), filterClasses(slot.status)]">
+        :class="[slotClasses(slot.status), filterClasses(slot.status, slot.slotLabel), 'cursor-pointer']"
+        @click="store.toggleSlotLabelFilter(slot.slotLabel)">
         <!-- ID label -->
         <span class="text-lg font-bold leading-none">{{ slot.slotLabel }}</span>
 

@@ -7,9 +7,29 @@ export type FilterType = SlotStatus | null
 
 export const useParkingStore = defineStore('parking', () => {
     const selectedFilter = ref<FilterType>(null)
+    const selectedSlotLabel = ref<string | null>(null)
 
     function toggleFilter(filter: FilterType) {
-        selectedFilter.value = selectedFilter.value === filter ? null : filter
+        if (selectedFilter.value !== filter) {
+            selectedFilter.value = filter
+            selectedSlotLabel.value = null // clear overlap
+        } else {
+            selectedFilter.value = null
+        }
+    }
+
+    function toggleSlotLabelFilter(slotLabel: string) {
+        if (selectedSlotLabel.value !== slotLabel) {
+            selectedSlotLabel.value = slotLabel
+            selectedFilter.value = null // clear overlap
+        } else {
+            selectedSlotLabel.value = null
+        }
+    }
+
+    function clearFilters() {
+        selectedFilter.value = null
+        selectedSlotLabel.value = null
     }
 
     function addEvent(event: ParkingEvent) {
@@ -48,7 +68,10 @@ export const useParkingStore = defineStore('parking', () => {
 
     return {
         selectedFilter,
+        selectedSlotLabel,
         toggleFilter,
+        toggleSlotLabelFilter,
+        clearFilters,
         addEvent,
         updateAllSlot,
         slots,
