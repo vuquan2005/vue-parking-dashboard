@@ -22,16 +22,16 @@ function slotClasses(status: string) {
   }
 }
 
-function filterClasses(status: string, slotLabel: string) {
+function filterClasses(status: string, palletLabel: string) {
   const filter = store.selectedFilter
-  const labelFilter = store.selectedSlotLabel
+  const labelFilter = store.selectedPalletLabel
 
   if (!filter && !labelFilter) {
     return ''
   }
 
   const matchesStatus = !filter || status === filter
-  const matchesLabel = !labelFilter || slotLabel === labelFilter
+  const matchesLabel = !labelFilter || palletLabel === labelFilter
 
   if (matchesStatus && matchesLabel) {
     return 'scale-[1.005]'
@@ -84,10 +84,10 @@ function statusBadgeClass(status: string) {
     <transition-group name="pallet" tag="div"
       class="grid grid-cols-4 gap-3 overflow-y-hidden overflow-x-hidden pr-1 min-h-0 flex-1 relative">
       <div v-for="slot in store.slots" :key="slot.palletId"
-        :class="[slotClasses(slot.status), filterClasses(slot.status, slot.slotLabel), 'cursor-pointer']"
-        @click="store.toggleSlotLabelFilter(slot.slotLabel)">
+        :class="[slotClasses(slot.status), filterClasses(slot.status, slot.palletLabel), 'cursor-pointer']"
+        @click="store.togglePalletLabelFilter(slot.palletLabel)">
         <!-- ID label -->
-        <span class="text-lg font-bold leading-none">{{ slot.slotLabel }}</span>
+        <span class="text-lg font-bold leading-none">{{ slot.palletLabel }}</span>
 
         <div v-if="slot.status !== 'NO_PALLET'" class="flex flex-col items-center justify-center w-full mt-1.5 h-6">
           <span

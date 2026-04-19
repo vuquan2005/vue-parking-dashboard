@@ -78,7 +78,7 @@ export function parkingStatus_StatusToJSON(object: ParkingStatus_Status): string
 
 export interface ParkingEvent {
   eventId: number;
-  slotId: number;
+  palletId: number;
   /** Unix epoch time in milliseconds */
   timestamp: number;
   eventType: ParkingEvent_EventType;
@@ -639,7 +639,7 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
 };
 
 function createBaseParkingEvent(): ParkingEvent {
-  return { eventId: 0, slotId: 0, timestamp: 0, eventType: 0, isDone: false };
+  return { eventId: 0, palletId: 0, timestamp: 0, eventType: 0, isDone: false };
 }
 
 export const ParkingEvent: MessageFns<ParkingEvent> = {
@@ -647,8 +647,8 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
     if (message.eventId !== 0) {
       writer.uint32(8).uint32(message.eventId);
     }
-    if (message.slotId !== 0) {
-      writer.uint32(16).uint32(message.slotId);
+    if (message.palletId !== 0) {
+      writer.uint32(16).uint32(message.palletId);
     }
     if (message.timestamp !== 0) {
       writer.uint32(24).uint64(message.timestamp);
@@ -682,7 +682,7 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
             break;
           }
 
-          message.slotId = reader.uint32();
+          message.palletId = reader.uint32();
           continue;
         }
         case 3: {
@@ -725,10 +725,10 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
         : isSet(object.event_id)
         ? globalThis.Number(object.event_id)
         : 0,
-      slotId: isSet(object.slotId)
-        ? globalThis.Number(object.slotId)
-        : isSet(object.slot_id)
-        ? globalThis.Number(object.slot_id)
+      palletId: isSet(object.palletId)
+        ? globalThis.Number(object.palletId)
+        : isSet(object.pallet_id)
+        ? globalThis.Number(object.pallet_id)
         : 0,
       timestamp: isSet(object.timestamp) ? globalThis.Number(object.timestamp) : 0,
       eventType: isSet(object.eventType)
@@ -749,8 +749,8 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
     if (message.eventId !== 0) {
       obj.eventId = Math.round(message.eventId);
     }
-    if (message.slotId !== 0) {
-      obj.slotId = Math.round(message.slotId);
+    if (message.palletId !== 0) {
+      obj.palletId = Math.round(message.palletId);
     }
     if (message.timestamp !== 0) {
       obj.timestamp = Math.round(message.timestamp);
@@ -770,7 +770,7 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
   fromPartial<I extends Exact<DeepPartial<ParkingEvent>, I>>(object: I): ParkingEvent {
     const message = createBaseParkingEvent();
     message.eventId = object.eventId ?? 0;
-    message.slotId = object.slotId ?? 0;
+    message.palletId = object.palletId ?? 0;
     message.timestamp = object.timestamp ?? 0;
     message.eventType = object.eventType ?? 0;
     message.isDone = object.isDone ?? false;

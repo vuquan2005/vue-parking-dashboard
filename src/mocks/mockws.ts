@@ -187,11 +187,9 @@ function generateNewEvent() {
     const success = parkingSystem.generateParkingQueue(targetPalletId, plateNumber)
     if (!success) return
 
-    const slotId = findSlotIdForPallet(targetPalletId)
-
     activeEvent = {
         eventId: eventIdCounter++,
-        slotId,
+        palletId: targetPalletId,
         timestamp: Date.now(),
         eventType,
         isDone: false,
@@ -271,7 +269,7 @@ export function initMockWs() {
         if (status === ParkingStatus_Status.OCCUPIED) {
             events.push({
                 eventId: eventIdCounter++,
-                slotId: i + 1,
+                palletId: palletId,
                 timestamp: Date.now() - Math.floor(Math.random() * 3600000),
                 eventType: ParkingEvent_EventType.IN,
                 isDone: true,

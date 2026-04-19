@@ -124,7 +124,7 @@ export function mapSlotStatus(
 ): ParkingSlot {
     if (palletId === 0) {
         return {
-            slotLabel: '',
+            palletLabel: '',
             status: 'NO_PALLET',
             palletId: '0',
         }
@@ -133,7 +133,7 @@ export function mapSlotStatus(
     const palletStatus = slotsArray[palletId - 1] ?? ParkingStatus_Status.UNKNOWN
 
     return {
-        slotLabel: palletIdToLabel(palletId),
+        palletLabel: palletIdToLabel(palletId),
         status: mapProtoStatusToUI(palletStatus),
         palletId: String(palletId),
     }
@@ -170,7 +170,7 @@ export function mapParkingEvent(event: ProtoParkingEvent): ParkingEvent {
     return {
         eventId: event.eventId,
         type: mapEventType(event.eventType),
-        slotLabel: slotIdToLabel(event.slotId),
+        palletLabel: palletIdToLabel(event.palletId),
         status: deriveEventStatus(event),
         timestamp: Number(event.timestamp),
     }

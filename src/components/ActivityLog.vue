@@ -6,9 +6,9 @@ import { formatUnixTimestamp } from '@/utils/time'
 
 const store = useParkingStore()
 const eventsNewestFirst = computed(() => {
-  const labelFilter = store.selectedSlotLabel
+  const labelFilter = store.selectedPalletLabel
   const events = labelFilter
-    ? store.events.filter((event) => event.slotLabel === labelFilter)
+    ? store.events.filter((event) => event.palletLabel === labelFilter)
     : store.events
 
   return [...events].reverse()
@@ -64,10 +64,10 @@ onBeforeUnmount(() => {
         Lịch sử ra vào
       </h2>
 
-      <button v-if="store.selectedSlotLabel" type="button"
+      <button v-if="store.selectedPalletLabel" type="button"
         class="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
-        @click="store.toggleSlotLabelFilter(store.selectedSlotLabel)">
-        {{ store.selectedSlotLabel }} x
+        @click="store.togglePalletLabelFilter(store.selectedPalletLabel)">
+        {{ store.selectedPalletLabel }} x
       </button>
     </div>
 
@@ -76,8 +76,8 @@ onBeforeUnmount(() => {
       <div v-for="event in eventsNewestFirst" :key="event.eventId" :class="[
         'cursor-pointer rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-shadow hover:shadow-sm',
         event.eventId === highlightedEventId ? 'log-item-highlight' : '',
-        store.selectedSlotLabel === event.slotLabel ? 'border-indigo-300 bg-indigo-50/40 shadow-sm' : '',
-      ]" @click="store.toggleSlotLabelFilter(event.slotLabel)">
+        store.selectedPalletLabel === event.palletLabel ? 'border-indigo-300 bg-indigo-50/40 shadow-sm' : '',
+      ]" @click="store.togglePalletLabelFilter(event.palletLabel)">
         <!-- Header row: badge + timestamp -->
         <div class="mb-2 flex items-center justify-between">
           <span :class="[
@@ -100,7 +100,7 @@ onBeforeUnmount(() => {
               <Car class="w-3.5 h-3.5" />
               Vị trí
             </span>
-            <span class="ml-2 font-bold text-gray-700">{{ event.slotLabel }}</span>
+            <span class="ml-2 font-bold text-gray-700">{{ event.palletLabel }}</span>
           </p>
           <p>
             <span class="text-gray-400">⇆</span>
