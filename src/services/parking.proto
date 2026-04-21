@@ -18,7 +18,6 @@ message ParkingStatus {
   // Status per pallet: maps pallet_id - 1 to pallet status
   repeated Status slots       = 2; // max_count: 10 (nanopb)
 
-
   enum Status {
     UNKNOWN    = 0;
     EMPTY      = 1;

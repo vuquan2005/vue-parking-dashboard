@@ -8,8 +8,11 @@
 /**
  * Converts a Unix timestamp (seconds or milliseconds) to a JavaScript Date.
  *
- * The helper detects whether the input is in seconds (10-digit) or milliseconds (13-digit)
- * and normalizes it to milliseconds.
+ * The helper accepts either:
+ * - seconds (10-digit epoch, e.g. 1680000000)
+ * - milliseconds (13-digit epoch, e.g. 1680000000000)
+ *
+ * It normalizes seconds to milliseconds before creating the Date.
  */
 export function unixTimestampToDate(unixTimestamp: number): Date {
     const timestampMs =
