@@ -79,8 +79,7 @@ export function parkingStatus_StatusToJSON(object: ParkingStatus_Status): string
 export interface ParkingEvent {
   eventId: number;
   palletId: number;
-  /** Unix epoch time in milliseconds */
-  timestamp: number;
+  /** uint64       timestamp    = 3; // Unix epoch time in milliseconds */
   eventType: ParkingEvent_EventType;
   isDone: boolean;
 }
@@ -639,7 +638,7 @@ export const ParkingStatus: MessageFns<ParkingStatus> = {
 };
 
 function createBaseParkingEvent(): ParkingEvent {
-  return { eventId: 0, palletId: 0, timestamp: 0, eventType: 0, isDone: false };
+  return { eventId: 0, palletId: 0, eventType: 0, isDone: false };
 }
 
 export const ParkingEvent: MessageFns<ParkingEvent> = {
@@ -649,9 +648,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
     }
     if (message.palletId !== 0) {
       writer.uint32(16).uint32(message.palletId);
-    }
-    if (message.timestamp !== 0) {
-      writer.uint32(24).uint64(message.timestamp);
     }
     if (message.eventType !== 0) {
       writer.uint32(32).int32(message.eventType);
@@ -683,14 +679,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
           }
 
           message.palletId = reader.uint32();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.timestamp = longToNumber(reader.uint64());
           continue;
         }
         case 4: {
@@ -730,7 +718,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
         : isSet(object.pallet_id)
         ? globalThis.Number(object.pallet_id)
         : 0,
-      timestamp: isSet(object.timestamp) ? globalThis.Number(object.timestamp) : 0,
       eventType: isSet(object.eventType)
         ? parkingEvent_EventTypeFromJSON(object.eventType)
         : isSet(object.event_type)
@@ -752,9 +739,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
     if (message.palletId !== 0) {
       obj.palletId = Math.round(message.palletId);
     }
-    if (message.timestamp !== 0) {
-      obj.timestamp = Math.round(message.timestamp);
-    }
     if (message.eventType !== 0) {
       obj.eventType = parkingEvent_EventTypeToJSON(message.eventType);
     }
@@ -771,7 +755,6 @@ export const ParkingEvent: MessageFns<ParkingEvent> = {
     const message = createBaseParkingEvent();
     message.eventId = object.eventId ?? 0;
     message.palletId = object.palletId ?? 0;
-    message.timestamp = object.timestamp ?? 0;
     message.eventType = object.eventType ?? 0;
     message.isDone = object.isDone ?? false;
     return message;
@@ -1475,17 +1458,6 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
-
-function longToNumber(int64: { toString(): string }): number {
-  const num = globalThis.Number(int64.toString());
-  if (num > globalThis.Number.MAX_SAFE_INTEGER) {
-    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  if (num < globalThis.Number.MIN_SAFE_INTEGER) {
-    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
-  }
-  return num;
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

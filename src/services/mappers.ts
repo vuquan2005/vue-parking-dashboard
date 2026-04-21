@@ -172,7 +172,8 @@ export function mapParkingEvent(event: ProtoParkingEvent): ParkingEvent {
         type: mapEventType(event.eventType),
         palletLabel: palletIdToLabel(event.palletId),
         status: deriveEventStatus(event),
-        timestamp: Number(event.timestamp),
+        // timestamp: Number(event.timestamp),
+        timestamp: Date.now(),
     }
 }
 
