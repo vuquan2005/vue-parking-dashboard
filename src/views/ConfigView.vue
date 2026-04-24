@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, Wifi, TerminalSquare } from 'lucide-vue-next'
 
@@ -9,6 +9,18 @@ import DebugTab from '@/components/config/DebugTab.vue'
 
 const router = useRouter()
 const activeTab = ref<'wifi' | 'debug'>('wifi')
+const buildTimestamp = ref<string | null>(null)
+
+onMounted(() => {
+  const ts = (window as unknown as { BUILD_TIMESTAMP?: string | number }).BUILD_TIMESTAMP
+  if (ts) {
+    const tsNum = Number(ts)
+    if (!isNaN(tsNum)) {
+      const date = new Date(tsNum * 1000)
+      buildTimestamp.value = date.toLocaleString()
+    }
+  }
+})
 </script>
 
 <template>
@@ -30,7 +42,7 @@ const activeTab = ref<'wifi' | 'debug'>('wifi')
 
       <div
         class="lg:col-span-2 flex flex-col min-h-[600px] lg:min-h-0 rounded-xl bg-white shadow-sm border border-gray-200 overflow-hidden">
-        
+
         <!-- Tabs Header -->
         <div class="border-b border-gray-200 px-6 pt-4 flex gap-6 shrink-0 bg-white">
           <button
@@ -46,7 +58,7 @@ const activeTab = ref<'wifi' | 'debug'>('wifi')
             </div>
             <div v-if="activeTab === 'wifi'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-full"></div>
           </button>
-          
+
           <button
             @click="activeTab = 'debug'"
             :class="[
@@ -68,6 +80,10 @@ const activeTab = ref<'wifi' | 'debug'>('wifi')
           <DebugTab v-if="activeTab === 'debug'" class="h-full" />
         </div>
       </div>
+    </div>
+
+    <div v-if="buildTimestamp" class="fixed bottom-2 right-2 text-xs text-gray-500/50 pointer-events-none z-50">
+      Build: {{ buildTimestamp }}
     </div>
   </div>
 </template>

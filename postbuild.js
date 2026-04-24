@@ -2,7 +2,11 @@ import { minify } from 'html-minifier-terser'
 import fs from 'fs'
 import zlib from 'zlib'
 
-const html = fs.readFileSync('dist/index.html', 'utf8')
+let html = fs.readFileSync('dist/index.html', 'utf8')
+
+const buildTimestamp = Math.floor(Date.now() / 1000)
+html = html.replace('#sym:buildTimestamp', buildTimestamp)
+fs.writeFileSync('dist/index.html', html)
 
 const result = await minify(html, {
     collapseWhitespace: true,
@@ -31,8 +35,6 @@ const chunks = []
 for (let i = 0; i < hexArray.length; i += 16) {
     chunks.push(hexArray.slice(i, i + 16).join(', '))
 }
-
-const buildTimestamp = Math.floor(Date.now() / 1000)
 
 const headerContent = `#ifndef HTML_H
 #define HTML_H
