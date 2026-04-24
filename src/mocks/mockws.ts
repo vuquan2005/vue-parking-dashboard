@@ -190,7 +190,7 @@ function generateNewEvent() {
     activeEvent = {
         eventId: eventIdCounter++,
         palletId: targetPalletId,
-        timestamp: Date.now(),
+        // timestamp: Date.now(),
         eventType,
         isDone: false,
     }
@@ -270,7 +270,7 @@ export function initMockWs() {
             events.push({
                 eventId: eventIdCounter++,
                 palletId: palletId,
-                timestamp: Date.now() - Math.floor(Math.random() * 3600000),
+                // timestamp: Date.now() - Math.floor(Math.random() * 3600000),
                 eventType: ParkingEvent_EventType.IN,
                 isDone: true,
             })

@@ -17,6 +17,7 @@ import {
 } from '@/services/mappers'
 import { useParkingStore } from '@/stores/parking'
 import { useDeviceStore } from '@/stores/device'
+import { useDebugStore } from '@/stores/debug'
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 
@@ -51,6 +52,7 @@ function handleMessage(event: MessageEvent) {
         const bytes = new Uint8Array(event.data)
         const parking = Parking.decode(bytes)
         console.log('[ws] Received Parking message:', parking)
+
         dispatch(parking)
     } catch (err) {
         console.error('[ws] Failed to decode Parking message:', err)
@@ -58,6 +60,9 @@ function handleMessage(event: MessageEvent) {
 }
 
 export function dispatch(parking: ReturnType<typeof Parking.decode>) {
+    const debugStore = useDebugStore()
+    debugStore.addMessage('in', parking)
+
     const parkingStore = useParkingStore()
     const deviceStore = useDeviceStore()
 
@@ -176,6 +181,11 @@ export function send(message: Parameters<typeof Parking.encode>[0]) {
         return
     }
     console.debug('[ws] Sending message:', message)
+
+    // Log outbound message to debug store
+    const debugStore = useDebugStore()
+    debugStore.addMessage('out', message)
+
     const bytes = Parking.encode(message).finish()
     ws.send(bytes)
 }
